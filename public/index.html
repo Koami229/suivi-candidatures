@@ -1,0 +1,2336 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dossier — Suivi des candidatures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#16243F; --navy-2:#1F3358;
+    --paper:#F6F5F1; --paper-2:#ECEAE3;
+    --ink:#1A1A17; --ink-soft:#5B5B54; --line:#D8D5CB;
+    --teal:#2E6E62; --teal-soft:#E4EFEC;
+    --amber:#B4762A; --amber-soft:#F3E6D2;
+    --red:#A23A2E; --red-soft:#F5E2DE;
+    --white:#FFFFFF; --radius:3px;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  html,body{height:100%;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'Public Sans',system-ui,-apple-system,sans-serif; -webkit-font-smoothing:antialiased;}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#14161B; --paper-2:#1B1E25; --ink:#EDEBE4; --ink-soft:#A9A79E;
+      --line:#33363F; --white:#1E212A; --navy:#22345A; --navy-2:#2C4270;
+      --teal-soft:#1B3833; --amber-soft:#3A2C15; --red-soft:#3A211D;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#14161B; --paper-2:#1B1E25; --ink:#EDEBE4; --ink-soft:#A9A79E;
+    --line:#33363F; --white:#1E212A; --navy:#22345A; --navy-2:#2C4270;
+    --teal-soft:#1B3833; --amber-soft:#3A2C15; --red-soft:#3A211D;
+  }
+  h1,h2,h3{font-family:'Fraunces',Georgia,serif; font-weight:600; margin:0;}
+  button{font-family:inherit; cursor:pointer;}
+  input,select,textarea{font-family:inherit; font-size:14px;}
+
+  #login-screen{min-height:100%; display:flex; align-items:center; justify-content:center; padding:32px 20px;}
+  .login-card{width:100%; max-width:380px; background:var(--white); border:1px solid var(--line); border-radius:var(--radius); padding:32px 28px;}
+  .login-mark{width:40px; height:40px; background:var(--navy); border-radius:2px; display:flex; align-items:center; justify-content:center; color:var(--paper); font-family:'Fraunces',serif; font-weight:600; font-size:18px; margin-bottom:18px;}
+  .login-card h1{font-size:22px; margin-bottom:4px;}
+  .login-card p.sub{color:var(--ink-soft); font-size:13.5px; margin:0 0 22px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12.5px; color:var(--ink-soft); margin-bottom:5px;}
+  .field input, .field select{width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:2px; background:var(--paper); color:var(--ink);}
+  .field input:focus, .field select:focus{outline:2px solid var(--navy-2); outline-offset:1px;}
+  #login-projet-field{display:none;}
+  .btn-primary{width:100%; padding:11px; margin-top:6px; background:var(--navy); color:#fff; border:none; border-radius:2px; font-size:14.5px; font-weight:600;}
+  .btn-primary:hover{background:var(--navy-2);}
+  .login-error{color:var(--red); font-size:13px; margin-top:12px; display:none;}
+  .login-hint{margin-top:20px; padding-top:16px; border-top:1px solid var(--line); font-size:12px; color:var(--ink-soft); line-height:1.7;}
+  .field-hint{font-size:11.5px; color:var(--ink-soft); line-height:1.5; margin:2px 0 10px;}
+
+  #app{display:none; min-height:100%; flex-direction:column;}
+  header.top{background:var(--navy); color:var(--paper); padding:16px 20px; padding-top:calc(16px + env(safe-area-inset-top,0px)); display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  header.top .brand{display:flex; align-items:center; gap:10px;}
+  header.top .brand .mark{width:30px; height:30px; background:var(--paper); color:var(--navy); border-radius:2px; display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-weight:600; font-size:14px;}
+  header.top .titles h1{font-size:18px; color:#fff;}
+  header.top .titles .role-tag{font-size:11.5px; color:rgba(255,255,255,.65); margin-top:2px;}
+  header.top .actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .btn{padding:9px 14px; border-radius:2px; border:1px solid transparent; font-size:13.5px; font-weight:600; display:inline-flex; align-items:center; gap:6px;}
+  .btn-light{background:rgba(255,255,255,.12); color:#fff; border-color:rgba(255,255,255,.25);}
+  .btn-light:hover{background:rgba(255,255,255,.2);}
+  .btn-light.active{background:#fff; color:var(--navy);}
+  .btn-teal{background:var(--teal); color:#fff;}
+  .btn-teal:hover{filter:brightness(1.08);}
+  .btn-ghost{background:transparent; color:var(--ink); border-color:var(--line);}
+  .btn-ghost:hover{background:var(--paper-2);}
+
+  main{padding:20px; flex:1;}
+  .toolbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:10px; flex-wrap:wrap;}
+  .toolbar .count{font-size:13px; color:var(--ink-soft);}
+  .search{padding:9px 12px; border:1px solid var(--line); border-radius:2px; background:var(--white); min-width:200px; flex:1; max-width:320px; color:var(--ink);}
+  .threshold-note{font-size:12px; color:var(--ink-soft); margin-bottom:14px;}
+
+  .table-wrap{border:1px solid var(--line); border-radius:var(--radius); overflow-x:auto; background:var(--white);}
+  table{width:100%; border-collapse:collapse; min-width:640px;}
+  thead th{text-align:left; font-size:11.5px; letter-spacing:.02em; color:var(--ink-soft); font-weight:600; padding:11px 14px; border-bottom:1px solid var(--line); background:var(--paper-2); white-space:nowrap;}
+  tbody td{padding:12px 14px; border-bottom:1px solid var(--line); font-size:14px; vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--paper-2);}
+  .name-cell{font-weight:600;}
+  .score{font-variant-numeric:tabular-nums; font-weight:600;}
+
+  .status-badge{display:inline-block; padding:5px 10px; border-radius:20px; font-size:12px; font-weight:600;}
+  .status-selected{background:var(--teal-soft); color:var(--teal);}
+  .status-rejet{background:var(--red-soft); color:var(--red);}
+  .status-amber{background:var(--amber-soft); color:var(--amber);}
+  .status-pending{background:var(--paper-2); color:var(--ink-soft);}
+
+  .btn-view{padding:7px 12px; border:1px solid var(--line); border-radius:2px; background:var(--white); font-size:12.5px; font-weight:600; color:var(--ink);}
+  .btn-view:hover{background:var(--navy); color:#fff; border-color:var(--navy);}
+
+  .empty{padding:48px 20px; text-align:center; color:var(--ink-soft);}
+  .empty h3{color:var(--ink); margin-bottom:6px; font-size:17px;}
+  .empty p{font-size:13.5px; margin:0 0 16px;}
+
+  /* Champ résidence — autocomplétion Geoapify (zone Bénin) */
+  .residence-wrap{position:relative;}
+  .residence-hint{font-size:11.5px; color:var(--ink-soft); margin-top:4px;}
+  .geoapify-suggestions{display:none; position:absolute; left:0; right:0; top:100%; margin-top:2px; background:var(--white); border:1px solid var(--line); border-radius:2px; box-shadow:0 4px 12px rgba(0,0,0,.12); max-height:220px; overflow-y:auto; z-index:60;}
+  .geoapify-suggestions.show{display:block;}
+  .geoapify-suggestion{padding:8px 12px; font-size:13.5px; cursor:pointer; border-bottom:1px solid var(--line);}
+  .geoapify-suggestion:last-child{border-bottom:none;}
+  .geoapify-suggestion:hover{background:var(--paper-2);}
+  #csv-input{display:none;}
+
+  /* STATS VIEW */
+  .filters-bar{display:flex; flex-wrap:wrap; gap:10px; background:var(--white); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin-bottom:16px;}
+  .filters-bar .f{display:flex; flex-direction:column; gap:4px;}
+  .filters-bar label{font-size:11px; color:var(--ink-soft); font-weight:600;}
+  .filters-bar select, .filters-bar input{padding:7px 9px; border:1px solid var(--line); border-radius:2px; background:var(--paper); font-size:13px; color:var(--ink);}
+  .stat-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:18px;}
+  .stat-card{background:var(--white); border:1px solid var(--line); border-radius:var(--radius); padding:16px;}
+  .stat-card .v{font-family:'Fraunces',serif; font-size:28px; font-weight:600; line-height:1;}
+  .stat-card .l{font-size:12px; color:var(--ink-soft); margin-top:6px;}
+  .breakdown-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .mini-table{background:var(--white); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;}
+  .mini-table h4{font-size:13px; padding:12px 14px; border-bottom:1px solid var(--line); background:var(--paper-2);}
+  .mini-table .row{display:flex; justify-content:space-between; padding:9px 14px; font-size:13.5px; border-bottom:1px solid var(--line);}
+  .mini-table .row:last-child{border-bottom:none;}
+  .mini-table .row .n{font-weight:700; font-variant-numeric:tabular-nums;}
+  @media(max-width:640px){.breakdown-grid{grid-template-columns:1fr;}}
+
+  /* MODAL */
+  .overlay{display:none; position:fixed; inset:0; background:rgba(15,17,15,.5); align-items:flex-start; justify-content:center; padding:24px 16px; padding-top:calc(24px + env(safe-area-inset-top,0px)); overflow-y:auto; z-index:50;}
+  .modal{background:var(--white); width:100%; max-width:680px; border-radius:4px; border:1px solid var(--line); margin-bottom:24px;}
+  .modal-head{background:var(--navy); color:#fff; padding:20px 24px; border-radius:4px 4px 0 0; position:relative;}
+  .modal-head .close{position:absolute; top:14px; right:14px; background:rgba(255,255,255,.12); border:none; color:#fff; width:28px; height:28px; border-radius:2px; font-size:16px; line-height:1;}
+  .mh-top{display:flex; align-items:center; gap:14px; margin-bottom:16px;}
+  .mh-avatar{flex:none; width:46px; height:46px; border-radius:50%; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-weight:600; font-size:16px; letter-spacing:.5px;}
+  .modal-head h2{color:#fff; font-size:21px; margin-bottom:0;}
+  .mh-icon{width:14px; height:14px; fill:none; stroke:#0B1424; stroke-width:2.3; stroke-linecap:round; stroke-linejoin:round;}
+
+  /* Grille de chips colorées — Informations candidat (synchronisée en direct) */
+  .mh-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-bottom:14px;}
+  .mh-chip{display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:8px 10px; min-width:0;}
+  .mh-chip .ico{flex:none; width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center;}
+  .mh-chip .txt{min-width:0;}
+  .mh-chip .txt .lbl{display:block; font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:rgba(255,255,255,.55); margin-bottom:1px;}
+  .mh-chip .txt .val{display:block; font-size:13.5px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .ico-age{background:#22D3EE;}
+  .ico-sexe{background:#F472B6;}
+  .ico-niveau{background:#FBBF24;}
+  .ico-residence{background:#4ADE80;}
+  .ico-tel{background:#A78BFA;}
+  .ico-email{background:#60A5FA;}
+
+  .modal-head .pills{display:flex; gap:8px; margin-top:2px; flex-wrap:wrap;}
+  .modal-head .pill{background:rgba(255,255,255,.14); padding:6px 13px; border-radius:20px; font-weight:700; font-size:13px; display:flex; align-items:center; border:1px solid rgba(255,255,255,.18);}
+  .modal-head .pill .mh-icon{stroke:currentColor; margin-right:6px; vertical-align:-2px;}
+  .modal-head .pill.tone-score{background:rgba(45,212,191,.18); color:#5EEAD4; border-color:rgba(94,234,212,.35);}
+  .modal-head .pill.tone-selected{background:rgba(143,227,199,.18); color:#8FE3C7; border-color:rgba(143,227,199,.35);}
+  .modal-head .pill.tone-rejet{background:rgba(243,165,151,.18); color:#F3A597; border-color:rgba(243,165,151,.35);}
+  .modal-head .pill.tone-amber{background:rgba(240,206,154,.18); color:#F0CE9A; border-color:rgba(240,206,154,.35);}
+  .modal-head .pill.tone-pending{background:rgba(255,255,255,.1); color:rgba(255,255,255,.8);}
+
+  .modal-body{padding:8px 24px 24px;}
+  .section-block{border-top:1px solid var(--line); padding:18px 0;}
+  .section-block:first-child{border-top:none;}
+  .section-block h3{font-size:15px; margin-bottom:2px;}
+  .section-block .section-sub{font-size:12px; color:var(--ink-soft); margin-bottom:12px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:10px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:10px;}
+  .field-s{margin-bottom:10px;}
+  .field-s label{display:block; font-size:11.5px; color:var(--ink-soft); margin-bottom:5px;}
+  .field-s label .req{color:var(--red);}
+  .field-s input, .field-s select, .field-s textarea{width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:2px; background:var(--paper); color:var(--ink);}
+  .field-s input.input-error, .field-s select.input-error{border-color:var(--red); background:var(--red-soft);}
+  .field-s input:disabled, .field-s textarea:disabled, .field-s select:disabled{opacity:.7; background:var(--paper-2);}
+  .field-s textarea{min-height:92px; font-family:inherit; font-size:13px; resize:vertical;}
+  .email-grid{display:grid; grid-template-columns:1fr 1fr; gap:0 14px;}
+  @media (max-width:640px){.email-grid{grid-template-columns:1fr;}}
+  .email-toggle{display:flex; align-items:center; gap:8px; font-size:13px; margin:10px 0 12px;}
+  .email-tpl{border:1px solid var(--line); border-radius:3px; padding:12px 12px 4px; margin-bottom:10px;}
+  .email-tpl h4{font-size:13px; margin-bottom:8px;}
+  .email-hint{font-size:11.5px; color:var(--ink-soft); margin:2px 0 10px;}
+  .email-msg{font-size:12px; margin-left:10px;}
+  .field-s textarea{resize:vertical; min-height:56px;}
+  .shl-notes{font-size:12.5px; color:var(--ink-soft); margin-top:-4px; margin-bottom:12px;}
+
+  .summary-list{display:grid; grid-template-columns:1fr 1fr; gap:8px 20px; font-size:13.5px;}
+  .summary-list div span{display:block; font-size:11px; color:var(--ink-soft); margin-bottom:2px;}
+
+  .check-group{display:flex; flex-wrap:wrap; gap:8px;}
+  .check-pill{display:flex; align-items:center; gap:6px; border:1px solid var(--line); padding:6px 11px; border-radius:20px; font-size:12.5px; background:var(--paper);}
+  .check-pill input{width:14px; height:14px; margin:0;}
+
+  .locked-banner{background:var(--paper-2); border:1px dashed var(--line); border-radius:2px; padding:12px 14px; font-size:12.5px; color:var(--ink-soft); margin-bottom:10px;}
+
+  .history-item{border:1px solid var(--line); border-radius:2px; padding:12px 14px; margin-bottom:10px; background:var(--paper);}
+  .history-item:last-child{margin-bottom:0;}
+  .history-item-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:2px;}
+  .history-item-head strong{font-size:13.5px;}
+  .history-comment{font-size:13px; color:var(--ink-soft); margin-top:8px; white-space:pre-wrap; line-height:1.5;}
+  .stage-locked .field-s input, .stage-locked .field-s select, .stage-locked .field-s textarea{pointer-events:none; opacity:.55;}
+
+  .modal-footer{display:flex; justify-content:flex-end; gap:10px; padding:16px 24px; border-top:1px solid var(--line);}
+  .sec-tabs{display:flex; gap:4px; padding:0 24px; border-bottom:1px solid var(--line); margin-bottom:18px;}
+  .sec-tab{background:transparent; border:none; border-bottom:2px solid transparent; padding:12px 6px; margin-right:18px; font-size:14px; color:var(--ink-soft); font-weight:600;}
+  .sec-tab.active{color:var(--navy-2); border-bottom-color:var(--navy-2);}
+  .sec-panel{display:none;}
+  .sec-panel.active{display:block;}
+  .save-note{font-size:12px; color:var(--teal); margin-right:auto; align-self:center; opacity:0; transition:opacity .3s;}
+  .save-note.show{opacity:1;}
+
+  @media (max-width:560px){
+    .mh-grid{grid-template-columns:1fr 1fr;}
+    .row2, .row3, .summary-list{grid-template-columns:1fr;}
+    header.top h1{font-size:16px;}
+  }
+
+  /* PV DE SYNTHÈSE */
+  .pv-meta{margin-top:4px; margin-bottom:18px;}
+  .pv-empty{padding:24px 0; color:var(--ink-soft); font-size:13.5px;}
+
+  @media print{
+    body *{ visibility:hidden; }
+    #pv-print-area, #pv-print-area *{ visibility:visible; }
+    #pv-print-area{ position:absolute; left:0; top:0; width:100%; padding:0; }
+    .overlay{ position:static !important; background:none !important; padding:0 !important; }
+    .modal{ box-shadow:none !important; border:none !important; max-width:100% !important; margin:0 !important; }
+  }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-mark">RH</div>
+    <h1>Suivi des candidatures</h1>
+    <p class="sub">Connectez-vous pour accéder au dossier de recrutement.</p>
+    <form id="login-form">
+      <div class="field">
+        <label for="user">Identifiant</label>
+        <input id="user" type="text" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="pass">Mot de passe</label>
+        <input id="pass" type="password" autocomplete="current-password" required>
+      </div>
+      <button class="btn-primary" type="submit">Se connecter</button>
+      <p class="login-error" id="login-error">Identifiant ou mot de passe incorrect.</p>
+    </form>
+    <div class="login-hint">
+      L'identifiant de tout accès (administrateur, recruteur, manager) est une adresse email @concentrix.com.<br><br>
+      Les accès Recruteur et Manager (identifiant, nom, prénom, email, et projet du ressort pour les managers) sont créés par l'administrateur (RH) depuis Paramètres. Un lien d'activation permet ensuite à chacun de définir lui-même son mot de passe.<br><br>
+      Un manager ne voit que les candidats du pré-vivier affectés par le recruteur au projet fixé sur son accès.<br><br>
+      La double authentification (code à 6 chiffres via une application d'authentification) est obligatoire : elle vous sera demandée dès la première connexion, puis à chaque connexion. Elle est gérable depuis « Double authentification » une fois connecté.<br><br>
+      <strong>DGPD/RGPD :</strong> les données des candidats sont traitées pour le seul besoin du processus de recrutement (Concentrix Bénin, service recrutement). Droits d'accès, de rectification et d'effacement : à adresser à l'administrateur RH. Détails complets : Paramètres > Données personnelles (RGPD).
+    </div>
+  </div>
+</div>
+
+<div id="twofa-screen" style="display:none;">
+  <div class="login-card">
+    <div class="login-mark">2FA</div>
+    <h1 id="twofa-title">Double authentification</h1>
+    <p class="sub" id="twofa-sub">Entrez le code à 6 chiffres généré par votre application d'authentification.</p>
+    <div id="twofa-setup-block" style="display:none;">
+      <p class="field-hint" style="margin-bottom:10px;">Aucun code de double authentification n'est encore associé à ce compte. Ajoutez-le dans une application d'authentification (Google Authenticator, Microsoft Authenticator, Authy…) en saisissant manuellement la clé ci-dessous, puis confirmez avec le code généré.</p>
+      <div class="field">
+        <label>Clé secrète à saisir dans l'application</label>
+        <input type="text" id="twofa-secret" readonly style="font-family:monospace; letter-spacing:1px;">
+      </div>
+      <div class="field">
+        <label>Lien de configuration (otpauth://)</label>
+        <input type="text" id="twofa-uri" readonly style="font-size:11px;">
+      </div>
+    </div>
+    <form id="twofa-form">
+      <div class="field">
+        <label for="twofa-code">Code à 6 chiffres</label>
+        <input id="twofa-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
+      </div>
+      <button class="btn-primary" type="submit" id="twofa-submit">Vérifier</button>
+      <button type="button" class="btn btn-ghost" id="twofa-cancel" style="width:100%; margin-top:8px;">Annuler et revenir à la connexion</button>
+      <p class="login-error" id="twofa-error">Code incorrect ou expiré.</p>
+    </form>
+  </div>
+</div>
+
+<div id="activation-screen" style="display:none;">
+  <div class="login-card">
+    <div class="login-mark">RH</div>
+    <h1>Définir votre mot de passe</h1>
+    <p class="sub" id="activation-sub">Bienvenue — choisissez votre mot de passe pour activer votre accès.</p>
+    <form id="activation-form">
+      <div class="field">
+        <label for="activation-pass1">Nouveau mot de passe</label>
+        <input id="activation-pass1" type="password" autocomplete="new-password" required>
+      </div>
+      <div class="field">
+        <label for="activation-pass2">Confirmer le mot de passe</label>
+        <input id="activation-pass2" type="password" autocomplete="new-password" required>
+      </div>
+      <p class="field-hint" style="margin-bottom:14px;">Le mot de passe doit contenir au moins 10 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial (ex : ! ? @ # % -).</p>
+      <button class="btn-primary" type="submit">Activer mon compte</button>
+      <p class="login-error" id="activation-error">Les mots de passe ne correspondent pas.</p>
+    </form>
+  </div>
+</div>
+
+<div id="app">
+  <header class="top">
+    <div class="brand">
+      <div class="mark">RH</div>
+      <div class="titles"><h1>Suivi des candidatures</h1><div class="role-tag" id="role-tag">—</div></div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-light active" id="btn-view-list">Candidats</button>
+      <button class="btn btn-light" id="btn-view-previvier" style="display:none;">Pré-vivier</button>
+      <button class="btn btn-light" id="btn-view-stats" style="display:none;">Statistiques</button>
+      <button class="btn btn-light" id="btn-view-settings" style="display:none;">Paramètres</button>
+      <button class="btn btn-teal" id="btn-import" style="display:none;">Importer (Excel/CSV)</button>
+      <button class="btn btn-teal" id="btn-generate-pv" style="display:none;">Générer le PV de synthèse</button>
+      <input type="file" id="csv-input" accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+      <button class="btn btn-light" id="btn-security">Mot de passe et double authentification</button>
+      <button class="btn btn-light" id="btn-logout">Déconnexion</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="view-list">
+      <div class="toolbar">
+        <span class="count" id="count-label">0 candidat</span>
+        <input class="search" id="search" type="text" placeholder="Rechercher un nom, un email…">
+      </div>
+      <div class="threshold-note" id="threshold-note"></div>
+      <div class="table-wrap">
+        <table>
+          <thead id="table-head"></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+        <div class="empty" id="empty-state" style="display:none;">
+          <h3 id="empty-title">Aucun candidat pour l'instant</h3>
+          <p id="empty-sub">Importez un fichier CSV pour remplir la liste.</p>
+          <button class="btn btn-teal" id="btn-import-2" style="display:none;">Importer la liste (Excel/CSV)</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-previvier" style="display:none;">
+      <div class="toolbar">
+        <span class="count" id="previvier-count-label">0 candidat</span>
+      </div>
+      <div class="threshold-note">Candidats validés par l'entretien RH, en cours de passage devant les managers (jusqu'à 3 tours maximum). Un candidat mis KO par ses trois managers sort définitivement du pré-vivier.</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Candidat</th><th>Moyenne SHL</th><th>Étape à venir</th><th>Affectation projet</th><th></th></tr>
+          </thead>
+          <tbody id="previvier-body"></tbody>
+        </table>
+        <div class="empty" id="previvier-empty" style="display:none;">
+          <h3>Aucun candidat dans le pré-vivier</h3>
+          <p>Les candidats validés en entretien RH apparaîtront ici.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-stats" style="display:none;">
+      <div class="filters-bar">
+        <div class="f"><label>Du</label><input type="date" id="f-from"></div>
+        <div class="f"><label>Au</label><input type="date" id="f-to"></div>
+        <div class="f"><label>Sexe</label><select id="f-sexe"><option value="">Tous</option><option value="Homme">Homme</option><option value="Femme">Femme</option></select></div>
+        <div class="f"><label>Niveau d'étude</label><select id="f-niveau"><option value="">Tous</option></select></div>
+        <div class="f"><label>Projet</label><select id="f-projet"><option value="">Tous</option></select></div>
+        <div class="f"><label>Géolocalisation</label><select id="f-geoloc"><option value="non">Non</option><option value="oui">Oui</option></select></div>
+        <div class="f"><label>Statut</label><select id="f-statut"><option value="">Tous</option><option value="SELECTED">Selected</option><option value="PREVIVER">Pré-vivier</option><option value="REJET">Rejet</option><option value="EN_ATTENTE">En attente</option></select></div>
+        <div class="f"><label>&nbsp;</label><button class="btn btn-ghost" id="f-reset">Réinitialiser</button></div>
+      </div>
+      <div class="stat-grid" id="stat-grid"></div>
+      <div class="breakdown-grid">
+        <div class="mini-table" id="tbl-niveau"></div>
+        <div class="mini-table" id="tbl-statut"></div>
+        <div class="mini-table" id="tbl-departement"></div>
+        <div class="mini-table" id="tbl-rh"></div>
+        <div class="mini-table" id="tbl-manager"></div>
+      </div>
+    </div>
+
+    <div id="view-settings" style="display:none;">
+      <div class="threshold-note">Gestion des accès — réservé à l'administrateur (RH). Nom et prénom sont obligatoires pour chaque accès, ainsi que le projet du ressort pour un manager.</div>
+
+      <div class="section-block" style="border-top:none;">
+        <h3>Comptes Manager</h3>
+        <div class="section-sub">Chaque compte manager est rattaché à un projet précis, attribué ici par l'administrateur.</div>
+        <div class="table-wrap" style="margin-bottom:14px;">
+          <table>
+            <thead><tr><th>Identifiant</th><th>Nom</th><th>Prénom</th><th>Projet</th><th>Statut</th><th></th></tr></thead>
+            <tbody id="settings-managers-body"></tbody>
+          </table>
+        </div>
+        <button class="btn btn-teal" id="btn-add-manager">+ Ajouter un accès manager</button>
+      </div>
+
+      <div class="section-block">
+        <h3>Comptes Recruteur</h3>
+        <div class="section-sub">Entretiens RH, pré-vivier &amp; affectation aux managers.</div>
+        <div class="table-wrap" style="margin-bottom:14px;">
+          <table>
+            <thead><tr><th>Identifiant</th><th>Nom</th><th>Prénom</th><th>Statut</th><th></th></tr></thead>
+            <tbody id="settings-recruteurs-body"></tbody>
+          </table>
+        </div>
+        <button class="btn btn-teal" id="btn-add-recruteur">+ Ajouter un accès recruteur</button>
+      </div>
+
+      <div class="section-block">
+        <h3>Emails automatiques</h3>
+        <div class="section-sub">Envoyés par le serveur (fournisseur, clé et contenus configurés ci-dessous). Déclenchements : entrée en pré-vivier (après RH OK), affectation à un projet (entretien manager à venir), passage en SELECTED. Bascule désactivée = décisions enregistrées sans email (« ignoré » dans le journal).</div>
+        <div class="email-grid">
+          <div class="field-s"><label>Fournisseur</label><select id="em-fournisseur">
+            <option value="resend">Resend</option>
+            <option value="brevo">Brevo</option>
+            <option value="sendgrid">SendGrid</option>
+          </select></div>
+          <div class="field-s"><label>Clé API <span id="em-key-state" style="color:var(--ink-soft);"></span></label><input type="password" id="em-apikey" placeholder="Laisser vide pour conserver la clé actuelle" autocomplete="off"></div>
+          <div class="field-s"><label>Email de l'expéditeur</label><input type="email" id="em-sender-email" placeholder="recrutement@concentrix.com"></div>
+          <div class="field-s"><label>Nom de l'expéditeur</label><input type="text" id="em-sender-name" placeholder="Concentrix Bénin — Recrutement"></div>
+        </div>
+        <label class="email-toggle"><input type="checkbox" id="em-actif"><span><strong>Envoi automatique activé</strong></span></label>
+        <button class="btn btn-teal" id="btn-email-save">Enregistrer la configuration</button>
+        <span class="email-msg" id="email-save-msg"></span>
+
+        <h4 style="margin:20px 0 4px; font-size:13px;">Contenus des emails (templates)</h4>
+        <p class="email-hint">Variables disponibles : <code>{{prenom}}</code>, <code>{{candidat}}</code> (nom), <code>{{projet}}</code>, <code>{{etape}}</code>, <code>{{date}}</code>, <code>{{score}}</code> (moyenne SHL).</p>
+        <div id="em-templates"></div>
+
+        <h4 style="margin:20px 0 8px; font-size:13px;">Email de test</h4>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <input type="email" id="em-test-to" placeholder="adresse@concentrix.com" style="max-width:300px; padding:8px 10px; border:1px solid var(--line); border-radius:2px; background:var(--paper); color:var(--ink);">
+          <button class="btn btn-ghost" id="btn-email-test">Envoyer un email de test</button>
+          <span class="email-msg" id="email-test-msg"></span>
+        </div>
+
+        <h4 style="margin:20px 0 8px; font-size:13px;">Journal des envois</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Candidat</th><th>Email</th><th>Destinataire</th><th>Fournisseur</th><th>Statut</th></tr></thead>
+            <tbody id="em-envois-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <h3>Journal d'audit</h3>
+        <div class="section-sub">« Qui a fait quoi » : connexions (dont échecs), double authentification, comptes, candidats (création, import, entretiens, modifications, affectations), emails, purges RGPD. Aucune donnée personnelle des candidats (noms, emails…) n'y figure — uniquement qui, quoi et la cible.</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
+          <input type="text" id="audit-username" placeholder="Utilisateur" style="width:220px; padding:8px 10px; border:1px solid var(--line); border-radius:2px; background:var(--paper); color:var(--ink);">
+          <input type="text" id="audit-action" placeholder="Action (ex. login, candidat)" style="width:240px; padding:8px 10px; border:1px solid var(--line); border-radius:2px; background:var(--paper); color:var(--ink);">
+          <input type="text" id="audit-q" placeholder="Recherche libre (cible, détail)" style="width:240px; padding:8px 10px; border:1px solid var(--line); border-radius:2px; background:var(--paper); color:var(--ink);">
+          <button class="btn btn-ghost" id="btn-audit-refresh">Actualiser</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Utilisateur</th><th>Action</th><th>Cible</th><th>Détail</th></tr></thead>
+            <tbody id="audit-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <h3>Données personnelles (RGPD)</h3>
+        <div class="section-sub">Informations relatives au traitement des données par cette application.</div>
+        <div style="font-size:13px; line-height:1.6; max-width:860px;">
+          <p style="margin:0 0 8px;"><strong>Responsable du traitement :</strong> Concentrix Bénin — service recrutement. Le traitement est opéré par cette application au seul service du processus de recrutement.</p>
+          <p style="margin:0 0 8px;"><strong>Données traitées :</strong> informations des candidats saisies ou importées (identité, contact, profil de formation, résidence, scores SHL), décisions d'entretien, historique des affectations, journal des emails ; pour les comptes internes : identifiant, nom/prénom, email de contact, mot de passe (haché) et clé de double authentification.</p>
+          <p style="margin:0 0 8px;"><strong>Finalité :</strong> gestion du processus de recrutement (tri, entretiens, affectations, statistiques, PV). Aucune décision entièrement automatisée produisant un effet juridique n'est prise : chaque décision est saisie par un utilisateur identifié.</p>
+          <p style="margin:0 0 8px;"><strong>Durée de conservation :</strong> jusqu'à la fin du processus de recrutement concerné ; au-delà, purge RGPD sur demande (effacement définitif de la fiche, des entretiens, et anonymisation des traces d'emails — action « Purger (RGPD) » de la fiche candidat).</p>
+          <p style="margin:0 0 8px;"><strong>Droits (accès, rectification, effacement) :</strong> à adresser à l'administrateur RH (propriétaire de cette application), qui les exécute directement dans l'outil.</p>
+          <p style="margin:0;"><strong>Mesures de sécurité :</strong> comptes individuels avec politique de mot de passe, double authentification obligatoire (TOTP), jetons de session révocables, clé des emails chiffrée en base (jamais en clair), clés sensibles uniquement en variables d'environnement, journal d'audit serveur, accès restreints par rôle et périmètre. Hébergement : base de données managée Vercel Postgres, accès par identifiants.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="overlay" id="account-overlay">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head">
+      <button class="close" id="account-modal-close">✕</button>
+      <h2 id="account-modal-title" style="font-size:19px;">Ajouter un accès</h2>
+    </div>
+    <div class="modal-body">
+      <div class="field-s"><label>Identifiant (adresse email @concentrix.com) <span class="req">*</span></label><input type="text" id="acc-username" placeholder="prenom.nom@concentrix.com"></div>
+      <div class="field-s"><label>Nom <span class="req">*</span></label><input type="text" id="acc-nom"></div>
+      <div class="field-s"><label>Prénom <span class="req">*</span></label><input type="text" id="acc-prenom"></div>
+      <div class="field-s"><label>Email <span class="req">*</span></label><input type="email" id="acc-email" placeholder="prenom.nom@concentrix.com"></div>
+      <div class="field-s" id="acc-projet-field"><label>Projet du ressort <span class="req">*</span></label><select id="acc-projet"></select></div>
+      <p style="font-size:12px; color:var(--ink-soft); margin:0;" id="acc-modal-note">Aucun mot de passe à saisir ici : un lien d'activation sera généré pour permettre à la personne de définir elle-même son mot de passe.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="account-modal-cancel">Annuler</button>
+      <button class="btn btn-teal" id="account-modal-save">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="activation-link-overlay">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-head">
+      <button class="close" id="activation-link-close">✕</button>
+      <h2 style="font-size:19px;">Lien d'activation généré</h2>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px; color:var(--ink-soft); margin-top:0;">Envoyez ce lien à <strong id="activation-link-email">—</strong> pour qu'elle/il définisse son mot de passe. Aucun email n'est envoyé automatiquement par cette page : utilisez le bouton ci-dessous (votre messagerie) ou copiez le lien.</p>
+      <div class="field-s"><label>Lien d'activation</label><input type="text" id="activation-link-value" readonly></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="activation-link-copy">Copier le lien</button>
+      <a class="btn btn-teal" id="activation-link-mailto" href="#" target="_blank" style="text-decoration:none;">Envoyer par email</a>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="security-overlay">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-head">
+      <button class="close" id="security-modal-close">✕</button>
+      <h2 style="font-size:19px;">Mot de passe et double authentification</h2>
+    </div>
+    <div class="sec-tabs">
+      <button class="sec-tab active" id="sec-tab-pwd" data-sec-tab="pwd">Mot de passe</button>
+      <button class="sec-tab" id="sec-tab-2fa" data-sec-tab="2fa">Double authentification</button>
+    </div>
+    <div class="modal-body">
+      <div class="sec-panel active" id="sec-panel-pwd">
+        <div class="field-s"><label>Mot de passe actuel <span class="req">*</span></label><input type="password" id="pwd-current"></div>
+        <div class="field-s"><label>Nouveau mot de passe <span class="req">*</span></label><input type="password" id="pwd-new"></div>
+        <p class="field-hint">Au moins 10 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.</p>
+        <div class="field-s"><label>Confirmer le nouveau mot de passe <span class="req">*</span></label><input type="password" id="pwd-confirm"></div>
+      </div>
+      <div class="sec-panel" id="sec-panel-2fa">
+        <p class="field-hint" id="twofa-manage-status" style="margin-bottom:14px;"></p>
+        <div id="twofa-manage-setup" style="display:none;">
+          <p class="field-hint" style="margin-bottom:10px;">Scannez ou saisissez cette clé dans votre application d'authentification, puis confirmez avec le code généré pour l'activer.</p>
+          <div class="field-s">
+            <label>Clé secrète</label>
+            <input type="text" id="twofa-manage-secret" readonly style="font-family:monospace; letter-spacing:1px;">
+          </div>
+          <div class="field-s">
+            <label>Lien de configuration (otpauth://)</label>
+            <input type="text" id="twofa-manage-uri" readonly style="font-size:11px;">
+          </div>
+          <div class="field-s">
+            <label>Code à 6 chiffres à confirmer</label>
+            <input type="text" id="twofa-manage-code" inputmode="numeric" maxlength="6">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="security-modal-cancel">Fermer</button>
+      <button class="btn btn-teal" id="pwd-modal-save" style="display:inline-flex;">Enregistrer</button>
+      <button class="btn btn-teal" id="twofa-manage-regenerate" style="display:none;">Réinitialiser ma clé</button>
+      <button class="btn btn-teal" id="twofa-manage-confirm" style="display:none;">Confirmer l'activation</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <button class="close" id="modal-close">✕</button>
+      <div class="mh-top">
+        <div class="mh-avatar" id="mh-avatar">—</div>
+        <h2 id="mh-name">—</h2>
+      </div>
+      <div class="mh-grid">
+        <div class="mh-chip"><div class="ico ico-age"><svg class="mh-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div><div class="txt"><span class="lbl">Âge</span><span class="val" id="mh-age">—</span></div></div>
+        <div class="mh-chip"><div class="ico ico-sexe"><svg class="mh-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div><div class="txt"><span class="lbl">Sexe</span><span class="val" id="mh-sexe">—</span></div></div>
+        <div class="mh-chip"><div class="ico ico-niveau"><svg class="mh-icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></div><div class="txt"><span class="lbl">Niveau d'étude</span><span class="val" id="mh-niveau">—</span></div></div>
+        <div class="mh-chip"><div class="ico ico-residence"><svg class="mh-icon" viewBox="0 0 24 24"><path d="M12 2 2 9l2 1v11h6v-6h4v6h6V10l2-1z"></path></svg></div><div class="txt"><span class="lbl">Résidence</span><span class="val" id="mh-residence">—</span></div></div>
+        <div class="mh-chip"><div class="ico ico-tel"><svg class="mh-icon" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></div><div class="txt"><span class="lbl">Téléphone</span><span class="val" id="mh-contact">—</span></div></div>
+        <div class="mh-chip"><div class="ico ico-email"><svg class="mh-icon" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22 6 12 13 2 6"></polyline></svg></div><div class="txt"><span class="lbl">Email</span><span class="val" id="mh-email">—</span></div></div>
+      </div>
+      <div class="pills">
+        <div class="pill tone-score"><svg class="mh-icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>Score SHL (moyenne) : <span id="mh-score">—</span></div>
+        <div class="pill status-line"><svg class="mh-icon" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg><span style="opacity:.7">Statut : </span><strong id="mh-statut-value">—</strong></div>
+      </div>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="modal-purge" style="margin-right:auto; color:var(--red); display:none;">Purger (RGPD)</button>
+      <span class="save-note" id="save-note">Modifications enregistrées</span>
+      <button class="btn btn-ghost" id="modal-cancel">Fermer</button>
+      <button class="btn btn-teal" id="modal-save">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="pv-overlay">
+  <div class="modal" style="max-width:760px;">
+    <div class="modal-head">
+      <button class="close" id="pv-close">✕</button>
+      <h2>PV de synthèse — Entretiens Manager</h2>
+    </div>
+    <div class="modal-body" id="pv-print-area"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="pv-close-2">Fermer</button>
+      <button class="btn btn-teal" id="pv-print">Imprimer / Exporter en PDF</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // Migration production : les comptes ne vivent PLUS dans le navigateur (localStorage) :
+  // ils sont gérés par l'API (base Postgres) — /api/auth/* et /api/comptes (admin).
+  // Aucun identifiant de démonstration n'est présent dans ce fichier.
+  var SEUIL = 80;
+
+  var NIVEAU_OPTS = ["BEPC","BAC","LICENCE","MASTER","THESE"];
+  var PROJET_OPTS = ["Samsung","Amazon","Emma","Lydia","Carrefour","Colis Privé","Devialet","Bouygues Telecom","La Poste courrier","La Poste colissimo","Comutitres","Effy","Catalina","Tiime","My Afro","Orange","BUT","HTG"];
+  var EXPERIENCE_OPTS = ["VIPP Interstis","AdKontact Bénin","CallConnect Bénin","SIONTEL","Palladium Africa","CRM Consulting","Groupe Ageka Bénin","Digit's Solutions","Groupe Media Contact","Glow Contact Center Benin","Africa Call Center","Call Center Services Bénin","Bénin Call Center","Global Contact Center","E-Call Bénin","Africa Contact Center","Outsourcing Bénin","Contact Center Solutions Bénin"];
+  var LANGUES_OPTS = ["Anglais","Espagnol","Arabe"];
+  var INFO_OPTS = ["Pack Office","Excel avancé","Outil CRM","ERP"];
+
+  // Autocomplétion d'adresse Geoapify : déplacée côté serveur (proxy API, clé en
+  // variable d'environnement) — sera restaurée à l'étape suivante.
+
+  var STAGES = [
+    {key:"rh", label:"Entretien RH", hasRecruteur:true, hasProjet:false, hasDate:true, hasNote:false, hasNomManager:false},
+    {key:"m1", label:"Entretien Manager 1", hasRecruteur:false, hasProjet:false, hasDate:true, hasNote:false, hasNomManager:true},
+    {key:"m2", label:"Entretien Manager 2", hasRecruteur:false, hasProjet:false, hasDate:true, hasNote:false, hasNomManager:true},
+    {key:"m3", label:"Entretien Manager 3", hasRecruteur:false, hasProjet:false, hasDate:true, hasNote:false, hasNomManager:true}
+  ];
+
+  var activeId = null;
+  var currentRole = null;
+  var currentUser = null;
+  var currentManagerName = null;
+  var currentManagerProjet = null;
+  var currentView = "list";
+
+  function emptyStage(){ return {note:"", decision:"a_faire", commentaire:"", recruteur:"", projet:"", nomManager:"", date:""}; }
+
+  // ---------- COMPTES / ACCÈS ----------
+  // Les accès Manager et Recruteur sont gérés par l'API (base Postgres) :
+  // /api/comptes (admin RH) et /api/auth/* (connexion, activation, 2FA).
+  // ---------- ROBUSTESSE DU MOT DE PASSE ----------
+  // Exige au moins 10 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.
+  function passwordIssues(pw){
+    pw = pw || "";
+    var issues = [];
+    if(pw.length < 10) issues.push("au moins 10 caractères");
+    if(!/[A-Z]/.test(pw)) issues.push("une lettre majuscule");
+    if(!/[a-z]/.test(pw)) issues.push("une lettre minuscule");
+    if(!/[0-9]/.test(pw)) issues.push("un chiffre");
+    if(!/[^A-Za-z0-9]/.test(pw)) issues.push("un caractère spécial (ex : ! ? @ # % -)");
+    return issues;
+  }
+
+  // ---------- DOUBLE AUTHENTIFICATION (TOTP, RFC 6238) — vérifiée CÔTE SERVEUR ----------
+  // Le serveur génère la clé, fournit l'URI otpauth:// et vérifie le code saisi.
+  // Le front ne fait plus aucun calcul TOTP (aucune dépendance à Web Crypto).
+  function formatSecretForDisplay(secret){
+    return (secret || "").match(/.{1,4}/g).join(" ");
+  }
+  // (Les comptes sont gérés côté serveur — API /api/comptes et /api/auth/*)
+  function currentAccedantFullName(){
+    if(!currentUser) return "";
+    return ((currentUser.prenom || "") + " " + (currentUser.nom || "")).trim();
+  }
+  function accountLabel(){
+    if(!currentUser) return "—";
+    if(currentUser.role === "rh") return "RH — administration complète";
+    var full = currentAccedantFullName();
+    if(currentUser.role === "recruteur") return "Recruteur — " + (full || currentUser.username);
+    if(currentUser.role === "manager") return "Manager — " + (full || currentUser.username);
+    return currentUser.username;
+  }
+  function openActivationLinkModal(email, link, prenom){
+    document.getElementById("activation-link-email").textContent = email;
+    document.getElementById("activation-link-value").value = link;
+    var subject = encodeURIComponent("Votre accès — Suivi des candidatures");
+    var body = encodeURIComponent(
+      "Bonjour" + (prenom ? " " + prenom : "") + ",\n\n" +
+      "Un accès vous a été créé sur l'application Suivi des candidatures.\n" +
+      "Identifiant : " + email + "\n\n" +
+      "Cliquez sur ce lien pour définir votre mot de passe :\n" + link + "\n\n" +
+      "Cordialement."
+    );
+    document.getElementById("activation-link-mailto").href = "mailto:" + encodeURIComponent(email) + "?subject=" + subject + "&body=" + body;
+    document.getElementById("activation-link-overlay").style.display = "flex";
+  }
+  document.getElementById("activation-link-close").addEventListener("click", function(){ document.getElementById("activation-link-overlay").style.display = "none"; });
+  document.getElementById("activation-link-overlay").addEventListener("click", function(e){ if(e.target === e.currentTarget) document.getElementById("activation-link-overlay").style.display = "none"; });
+  document.getElementById("activation-link-copy").addEventListener("click", function(){
+    var input = document.getElementById("activation-link-value");
+    input.select();
+    input.setSelectionRange(0, 99999);
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(input.value);
+      else document.execCommand("copy");
+    }catch(e){}
+  });
+
+  // ---------- LOGIN ----------
+  // ---------- SESSION (JWT, remplace l'ancienne session navigateur) ----------
+  var SESSION_STORE_KEY = "sc_session_v1";
+  var session = null;        // {access, refresh}
+  var preauthTicket = null;  // ticket de connexion en attente du code 2FA
+
+  function loadSession(){
+    try{
+      var raw = localStorage.getItem(SESSION_STORE_KEY);
+      session = raw ? JSON.parse(raw) : null;
+    }catch(e){ session = null; }
+    return session;
+  }
+  function saveSession(s){
+    session = s;
+    try{ localStorage.setItem(SESSION_STORE_KEY, JSON.stringify(s)); }catch(e){}
+  }
+  function clearSession(){
+    session = null;
+    try{ localStorage.removeItem(SESSION_STORE_KEY); }catch(e){}
+  }
+  function applyUser(user){
+    currentUser = user;
+    currentRole = user.role;
+    var full = currentAccedantFullName();
+    currentManagerName = user.role === "manager" ? (full || null) : null;
+    currentManagerProjet = user.role === "manager" ? (user.projet || null) : null;
+  }
+  // Appelle l'API avec le token d'accès ; en cas de 401, tente une fois le
+  // renouvellement (refresh token) puis relance l'appel.
+  async function apiFetch(path, opts){
+    opts = opts || {};
+    opts.headers = Object.assign({}, opts.headers);
+    if(session && session.access) opts.headers["Authorization"] = "Bearer " + session.access;
+    var res = await fetch(path, opts);
+    if(res.status === 401 && session && session.refresh){
+      var r = await fetch("/api/auth/refresh", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ refresh_token: session.refresh })
+      });
+      if(r.ok){
+        var nt = await r.json();
+        saveSession(nt);
+        opts.headers["Authorization"] = "Bearer " + session.access;
+        res = await fetch(path, opts);
+      }
+    }
+    return res;
+  }
+  async function checkSession(){
+    loadSession();
+    if(session){
+      try{
+        var res = await apiFetch("/api/auth/me", { method: "GET" });
+        if(res.ok){
+          applyUser(await res.json());
+          showApp();
+          return;
+        }
+      }catch(e){}
+    }
+    clearSession();
+    showLogin();
+  }
+  function showApp(){
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app").style.display = "flex";
+    var label = accountLabel();
+    if(currentRole === "manager" && currentManagerProjet) label += " — " + currentManagerProjet;
+    document.getElementById("role-tag").textContent = "Connecté — " + label;
+    var isRh = currentRole === "rh";
+    var isRecruteur = currentRole === "recruteur";
+    document.getElementById("btn-import").style.display = isRh ? "inline-flex" : "none";
+    document.getElementById("btn-import-2").style.display = isRh ? "inline-flex" : "none";
+    document.getElementById("btn-view-stats").style.display = isRh ? "inline-flex" : "none";
+    document.getElementById("btn-view-settings").style.display = isRh ? "inline-flex" : "none";
+    document.getElementById("btn-view-previvier").style.display = (isRh || isRecruteur) ? "inline-flex" : "none";
+    document.getElementById("btn-generate-pv").style.display = (currentRole === "manager") ? "inline-flex" : "none";
+    document.getElementById("threshold-note").textContent = isRh
+      ? "Seuls les candidats avec une moyenne SHL ≥ " + SEUIL + " sont affichés ci-dessous ; les autres restent enregistrés mais masqués."
+      : "";
+    buildTableHead();
+    populateStatsFilterOptions();
+    setView("list");
+    render();
+  }
+  function showLogin(){
+    document.getElementById("app").style.display = "none";
+    document.getElementById("twofa-screen").style.display = "none";
+    document.getElementById("login-screen").style.display = "flex";
+  }
+  document.getElementById("login-form").addEventListener("submit", async function(e){
+    e.preventDefault();
+    var u = document.getElementById("user").value.trim().toLowerCase();
+    var p = document.getElementById("pass").value;
+    var errEl = document.getElementById("login-error");
+    if(!isConcentrixEmail(u)){
+      errEl.textContent = "L'identifiant doit être une adresse email se terminant par @concentrix.com.";
+      errEl.style.display = "block";
+      return;
+    }
+    errEl.style.display = "none";
+    try{
+      var res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ username: u, password: p })
+      });
+      var data = await res.json().catch(function(){ return {}; });
+      if(!res.ok){
+        errEl.textContent = data.message || "Identifiant ou mot de passe incorrect.";
+        errEl.style.display = "block";
+        return;
+      }
+      // La double authentification est obligatoire et vérifiée côté serveur.
+      preauthTicket = data.ticket;
+      document.getElementById("login-screen").style.display = "none";
+      document.getElementById("twofa-error").style.display = "none";
+      document.getElementById("twofa-form").reset();
+      if(data.setup){
+        // Première connexion : configuration de la 2FA (clé fournie par le serveur).
+        document.getElementById("twofa-title").textContent = "Configurer la double authentification";
+        document.getElementById("twofa-sub").textContent = "Ce compte n'a pas encore de double authentification active — elle est obligatoire pour continuer.";
+        document.getElementById("twofa-secret").value = formatSecretForDisplay(data.setup.secret);
+        document.getElementById("twofa-uri").value = data.setup.otpauth_uri;
+        document.getElementById("twofa-setup-block").style.display = "block";
+        document.getElementById("twofa-submit").textContent = "Activer la double authentification";
+      }else{
+        document.getElementById("twofa-title").textContent = "Double authentification";
+        document.getElementById("twofa-sub").textContent = "Entrez le code à 6 chiffres généré par votre application d'authentification.";
+        document.getElementById("twofa-setup-block").style.display = "none";
+        document.getElementById("twofa-submit").textContent = "Vérifier";
+      }
+      document.getElementById("twofa-screen").style.display = "flex";
+    }catch(err){
+      errEl.textContent = "Erreur de connexion au serveur.";
+      errEl.style.display = "block";
+    }
+  });
+  function completeLogin(data){
+    saveSession({ access: data.access_token, refresh: data.refresh_token });
+    applyUser(data.user);
+    preauthTicket = null;
+    document.getElementById("twofa-screen").style.display = "none";
+    showApp();
+  }
+  document.getElementById("twofa-cancel").addEventListener("click", function(){
+    preauthTicket = null;
+    document.getElementById("twofa-screen").style.display = "none";
+    document.getElementById("login-form").reset();
+    showLogin();
+  });
+  document.getElementById("twofa-form").addEventListener("submit", async function(e){
+    e.preventDefault();
+    var code = document.getElementById("twofa-code").value;
+    var errEl = document.getElementById("twofa-error");
+    if(!preauthTicket){
+      errEl.textContent = "Session de connexion expirée — reconnectez-vous.";
+      errEl.style.display = "block";
+      return;
+    }
+    try{
+      var res = await fetch("/api/auth/twofa", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ticket: preauthTicket, code: code })
+      });
+      var data = await res.json().catch(function(){ return {}; });
+      if(!res.ok){
+        errEl.textContent = data.message || "Code incorrect ou expiré.";
+        errEl.style.display = "block";
+        return;
+      }
+      completeLogin(data);
+    }catch(err){
+      errEl.textContent = "Erreur de connexion au serveur.";
+      errEl.style.display = "block";
+    }
+  });
+  document.getElementById("btn-logout").addEventListener("click", function(){
+    if(session && session.refresh){
+      fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ refresh_token: session.refresh })
+      }).catch(function(){});
+    }
+    clearSession();
+    preauthTicket = null;
+    currentRole = null; currentUser = null; currentManagerName = null; currentManagerProjet = null;
+    document.getElementById("login-form").reset();
+    showLogin();
+  });
+
+  // ---------- ACTIVATION DE COMPTE (LIEN REÇU PAR EMAIL) ----------
+  var activationToken = null;
+  async function checkActivationLink(){
+    var params = new URLSearchParams(location.search);
+    var token = params.get("activation");
+    if(!token) return false;
+    var ok = false;
+    try{
+      var res = await fetch("/api/auth/activate?token=" + encodeURIComponent(token), { method: "GET" });
+      var data = await res.json().catch(function(){ return {}; });
+      if(res.ok && data.valid){
+        activationToken = token;
+        document.getElementById("activation-sub").textContent = "Bienvenue " + (data.prenom || data.username) + " — choisissez votre mot de passe pour activer votre accès.";
+        document.getElementById("login-screen").style.display = "none";
+        document.getElementById("app").style.display = "none";
+        document.getElementById("activation-screen").style.display = "flex";
+        ok = true;
+      }
+    }catch(e){}
+    if(!ok){
+      document.getElementById("login-error").textContent = "Ce lien d'activation n'est pas valide ou a expiré.";
+      document.getElementById("login-error").style.display = "block";
+    }
+    return ok;
+  }
+  document.getElementById("activation-form").addEventListener("submit", async function(e){
+    e.preventDefault();
+    var p1 = document.getElementById("activation-pass1").value;
+    var p2 = document.getElementById("activation-pass2").value;
+    var errEl = document.getElementById("activation-error");
+    if(!p1 || p1 !== p2){
+      errEl.textContent = "Les mots de passe ne correspondent pas.";
+      errEl.style.display = "block";
+      return;
+    }
+    var issues = passwordIssues(p1);
+    if(issues.length){
+      errEl.textContent = "Le mot de passe doit contenir : " + issues.join(", ") + ".";
+      errEl.style.display = "block";
+      return;
+    }
+    try{
+      var res = await fetch("/api/auth/activation", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token: activationToken, password: p1 })
+      });
+      var data = await res.json().catch(function(){ return {}; });
+      if(!res.ok){
+        errEl.textContent = data.message || "Ce lien n'est plus valide.";
+        errEl.style.display = "block";
+        return;
+      }
+      errEl.style.display = "none";
+      try{ history.replaceState(null, "", location.origin + location.pathname); }catch(err){}
+      document.getElementById("activation-screen").style.display = "none";
+      document.getElementById("activation-form").reset();
+      showLogin();
+      document.getElementById("login-error").textContent = "Mot de passe défini avec succès — vous pouvez vous connecter (et configurer la double authentification).";
+      document.getElementById("login-error").style.display = "block";
+    }catch(err){
+      errEl.textContent = "Erreur de connexion au serveur.";
+      errEl.style.display = "block";
+    }
+  });
+
+  // ---------- MOT DE PASSE + DOUBLE AUTHENTIFICATION (MODALE FUSIONNÉE) ----------
+  function setSecurityTab(tab){
+    document.getElementById("sec-tab-pwd").classList.toggle("active", tab === "pwd");
+    document.getElementById("sec-tab-2fa").classList.toggle("active", tab === "2fa");
+    document.getElementById("sec-panel-pwd").classList.toggle("active", tab === "pwd");
+    document.getElementById("sec-panel-2fa").classList.toggle("active", tab === "2fa");
+    document.getElementById("pwd-modal-save").style.display = (tab === "pwd") ? "inline-flex" : "none";
+    if(tab === "2fa"){
+      refreshTwofaManageStatus();
+      document.getElementById("twofa-manage-regenerate").style.display = "inline-flex";
+    }else{
+      document.getElementById("twofa-manage-regenerate").style.display = "none";
+      document.getElementById("twofa-manage-confirm").style.display = "none";
+    }
+  }
+  document.getElementById("sec-tab-pwd").addEventListener("click", function(){ setSecurityTab("pwd"); });
+  document.getElementById("sec-tab-2fa").addEventListener("click", function(){ setSecurityTab("2fa"); });
+
+  function openPwdModal(){
+    document.getElementById("pwd-current").value = "";
+    document.getElementById("pwd-new").value = "";
+    document.getElementById("pwd-confirm").value = "";
+    [document.getElementById("pwd-current"), document.getElementById("pwd-new"), document.getElementById("pwd-confirm")].forEach(function(el){ el.classList.remove("input-error"); });
+    manageTwofaPendingSecret = null;
+    document.getElementById("twofa-manage-setup").style.display = "none";
+    document.getElementById("twofa-manage-code").value = "";
+    setSecurityTab("pwd");
+    document.getElementById("security-overlay").style.display = "flex";
+  }
+  function closePwdModal(){ document.getElementById("security-overlay").style.display = "none"; }
+  document.getElementById("btn-security").addEventListener("click", openPwdModal);
+  document.getElementById("security-modal-close").addEventListener("click", closePwdModal);
+  document.getElementById("security-modal-cancel").addEventListener("click", closePwdModal);
+  document.getElementById("security-overlay").addEventListener("click", function(e){ if(e.target === e.currentTarget) closePwdModal(); });
+  document.getElementById("pwd-modal-save").addEventListener("click", async function(){
+    var curEl = document.getElementById("pwd-current");
+    var newEl = document.getElementById("pwd-new");
+    var confEl = document.getElementById("pwd-confirm");
+    var missing = [];
+
+    var curFilled = curEl.value !== "";
+    curEl.classList.toggle("input-error", !curFilled);
+    if(!curFilled) missing.push("mot de passe actuel");
+
+    var newOk = newEl.value !== "";
+    newEl.classList.toggle("input-error", !newOk);
+    if(!newOk) missing.push("nouveau mot de passe");
+
+    var strengthIssues = newOk ? passwordIssues(newEl.value) : [];
+    if(newOk && strengthIssues.length){
+      newEl.classList.add("input-error");
+      missing.push("nouveau mot de passe trop faible (il doit contenir : " + strengthIssues.join(", ") + ")");
+    }
+
+    var confOk = newOk && confEl.value === newEl.value;
+    confEl.classList.toggle("input-error", !confOk);
+    if(newOk && !confOk) missing.push("confirmation (ne correspond pas)");
+
+    if(missing.length){
+      alert("Merci de corriger :\n— " + missing.join("\n— "));
+      return;
+    }
+    try{
+      var res = await apiFetch("/api/auth/password", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ current: curEl.value, new_password: newEl.value })
+      });
+      var data = await res.json().catch(function(){ return {}; });
+      if(!res.ok){
+        curEl.classList.toggle("input-error", data.code === "bad_current");
+        alert(data.message || "Le mot de passe n'a pas pu être modifié.");
+        return;
+      }
+      closePwdModal();
+      alert("Mot de passe modifié avec succès.");
+    }catch(err){
+      alert("Erreur de connexion au serveur.");
+    }
+  });
+
+  // ---------- GÉRER / RÉINITIALISER MA DOUBLE AUTHENTIFICATION (EN COURS DE SESSION) ----------
+  var manageTwofaPendingSecret = null;
+  function refreshTwofaManageStatus(){
+    var statusEl = document.getElementById("twofa-manage-status");
+    apiFetch("/api/auth/twofa-status", { method: "GET" }).then(function(r){ return r.json(); })
+      .then(function(d){
+        statusEl.textContent = d.configured
+          ? "La double authentification est actuellement active sur ce compte."
+          : "Aucune double authentification n'est configurée sur ce compte pour l'instant.";
+      })
+      .catch(function(){
+        statusEl.textContent = "Statut de la double authentification indisponible.";
+      });
+  }
+  document.getElementById("twofa-manage-regenerate").addEventListener("click", function(){
+    apiFetch("/api/auth/twofa-regenerate", { method: "POST" }).then(function(r){
+      return r.json().then(function(d){ return { ok: r.ok, d: d }; });
+    }).then(function(out){
+      if(!out.ok){ alert(out.d.message || "Génération impossible."); return; }
+      manageTwofaPendingSecret = out.d.ticket;
+      document.getElementById("twofa-manage-secret").value = formatSecretForDisplay(out.d.secret);
+      document.getElementById("twofa-manage-uri").value = out.d.otpauth_uri;
+      document.getElementById("twofa-manage-setup").style.display = "block";
+      document.getElementById("twofa-manage-confirm").style.display = "inline-flex";
+      document.getElementById("twofa-manage-status").textContent = "Ajoutez cette nouvelle clé dans votre application d'authentification, puis confirmez avec le code généré. L'ancienne clé restera active tant que vous n'aurez pas confirmé.";
+    }).catch(function(){
+      alert("Erreur de connexion au serveur.");
+    });
+  });
+  document.getElementById("twofa-manage-confirm").addEventListener("click", function(){
+    var code = document.getElementById("twofa-manage-code").value;
+    if(!manageTwofaPendingSecret) return;
+    apiFetch("/api/auth/twofa-confirm", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ticket: manageTwofaPendingSecret, code: code })
+    }).then(function(r){
+      return r.json().then(function(d){ return { ok: r.ok, d: d }; });
+    }).then(function(out){
+      if(!out.ok){ alert(out.d.message || "Code incorrect ou expiré. Vérifiez l'heure de votre appareil et réessayez."); return; }
+      manageTwofaPendingSecret = null;
+      closePwdModal();
+      alert("Double authentification activée avec succès.");
+    }).catch(function(){
+      alert("Erreur de connexion au serveur.");
+    });
+  });
+
+  // ---------- VIEW SWITCH ----------
+  document.getElementById("btn-view-list").addEventListener("click", function(){ setView("list"); });
+  document.getElementById("btn-view-previvier").addEventListener("click", function(){ setView("previvier"); });
+  document.getElementById("btn-view-stats").addEventListener("click", function(){ setView("stats"); });
+  document.getElementById("btn-view-settings").addEventListener("click", function(){ setView("settings"); });
+  function setView(v){
+    currentView = v;
+    document.getElementById("view-list").style.display = v === "list" ? "block" : "none";
+    document.getElementById("view-previvier").style.display = v === "previvier" ? "block" : "none";
+    document.getElementById("view-stats").style.display = v === "stats" ? "block" : "none";
+    document.getElementById("view-settings").style.display = v === "settings" ? "block" : "none";
+    document.getElementById("btn-view-list").classList.toggle("active", v === "list");
+    document.getElementById("btn-view-previvier").classList.toggle("active", v === "previvier");
+    document.getElementById("btn-view-stats").classList.toggle("active", v === "stats");
+    document.getElementById("btn-view-settings").classList.toggle("active", v === "settings");
+    if(v === "stats") renderStats();
+    if(v === "previvier") renderPrevivier();
+    if(v === "settings") renderSettings();
+  }
+
+  // ---------- PARAMÈTRES (GESTION DES ACCÈS — ADMIN UNIQUEMENT) ----------
+  var accModalRole = null;   // "manager" | "recruteur"
+  var accModalEditing = null; // identifiant du compte en cours d'édition, ou null si création
+
+  var settingsAccounts = {};
+  async function renderSettings(){
+    var mBody = document.getElementById("settings-managers-body");
+    var rBody = document.getElementById("settings-recruteurs-body");
+    var mRows = [], rRows = [];
+    settingsAccounts = {};
+    var res;
+    try{
+      res = await apiFetch("/api/comptes", { method: "GET" });
+    }catch(e){
+      mBody.innerHTML = '<tr><td colspan="6" style="color:var(--red);">Chargement des accès impossible.</td></tr>';
+      rBody.innerHTML = '<tr><td colspan="5" style="color:var(--red);">Chargement des accès impossible.</td></tr>';
+      return;
+    }
+    if(!res.ok){
+      mBody.innerHTML = '<tr><td colspan="6" style="color:var(--red);">Chargement des accès impossible.</td></tr>';
+      rBody.innerHTML = '<tr><td colspan="5" style="color:var(--red);">Chargement des accès impossible.</td></tr>';
+      return;
+    }
+    var data = await res.json().catch(function(){ return { accounts: [] }; });
+    (data.accounts || []).forEach(function(a){
+      settingsAccounts[a.username] = a;
+      var statusBadge = a.activated
+        ? '<span class="status-badge status-selected">Actif</span>'
+        : '<span class="status-badge status-amber">En attente d\'activation</span>';
+      var actions = '<button class="btn-view" data-edit-acc="' + escapeHtml(a.username) + '">Modifier</button> ' +
+        '<button class="btn-view" data-reset-acc="' + escapeHtml(a.username) + '">Réinitialiser le mot de passe</button> ' +
+        '<button class="btn-view" data-del-acc="' + escapeHtml(a.username) + '">Supprimer</button>';
+      if(a.role === "manager"){
+        mRows.push('<tr><td class="name-cell">' + escapeHtml(a.username) + '</td><td>' + escapeHtml(a.nom || "—") + '</td><td>' + escapeHtml(a.prenom || "—") + '</td><td>' + escapeHtml(a.projet || "—") + '</td><td>' + statusBadge + '</td>' +
+          '<td>' + actions + '</td></tr>');
+      } else if(a.role === "recruteur"){
+        rRows.push('<tr><td class="name-cell">' + escapeHtml(a.username) + '</td><td>' + escapeHtml(a.nom || "—") + '</td><td>' + escapeHtml(a.prenom || "—") + '</td><td>' + statusBadge + '</td>' +
+          '<td>' + actions + '</td></tr>');
+      }
+    });
+    mBody.innerHTML = mRows.join("") || '<tr><td colspan="6" style="color:var(--ink-soft);">Aucun accès manager pour l\'instant.</td></tr>';
+    rBody.innerHTML = rRows.join("") || '<tr><td colspan="5" style="color:var(--ink-soft);">Aucun accès recruteur pour l\'instant.</td></tr>';
+
+    mBody.querySelectorAll("[data-edit-acc]").forEach(function(b){ b.addEventListener("click", function(){ openAccountModal("manager", b.getAttribute("data-edit-acc")); }); });
+    rBody.querySelectorAll("[data-edit-acc]").forEach(function(b){ b.addEventListener("click", function(){ openAccountModal("recruteur", b.getAttribute("data-edit-acc")); }); });
+    mBody.querySelectorAll("[data-del-acc]").forEach(function(b){ b.addEventListener("click", function(){ deleteAccount(b.getAttribute("data-del-acc")); }); });
+    rBody.querySelectorAll("[data-del-acc]").forEach(function(b){ b.addEventListener("click", function(){ deleteAccount(b.getAttribute("data-del-acc")); }); });
+    mBody.querySelectorAll("[data-reset-acc]").forEach(function(b){ b.addEventListener("click", function(){ resetAccountPassword(b.getAttribute("data-reset-acc")); }); });
+    rBody.querySelectorAll("[data-reset-acc]").forEach(function(b){ b.addEventListener("click", function(){ resetAccountPassword(b.getAttribute("data-reset-acc")); }); });
+    loadEmailSettings();
+    loadAudit();
+  }
+
+  // ---------- PARAMÈTRES > EMAIL (ÉTAPE 5 — serveur) ----------
+  var emailTplLibelles = {};
+  async function loadEmailSettings(){
+    var res;
+    try{ res = await apiFetch("/api/parametres/email", { method: "GET" }); }catch(e){ return; }
+    if(!res.ok) return;
+    var d = await res.json().catch(function(){ return null; });
+    if(!d) return;
+    document.getElementById("em-fournisseur").value = d.fournisseur;
+    document.getElementById("em-sender-email").value = d.sender_email || "";
+    document.getElementById("em-sender-name").value = d.sender_name || "";
+    document.getElementById("em-actif").checked = !!d.actif;
+    document.getElementById("em-apikey").value = "";
+    document.getElementById("em-key-state").textContent = d.has_key ? "(clé configurée)" : "(non configurée)";
+    emailTplLibelles = {};
+    var host = document.getElementById("em-templates");
+    host.innerHTML = "";
+    (d.templates || []).forEach(function(t){
+      emailTplLibelles[t.code] = t.libelle;
+      var div = document.createElement("div");
+      div.className = "email-tpl";
+      div.innerHTML =
+        "<h4>" + escapeHtml(t.libelle) + "</h4>" +
+        '<div class="field-s"><label>Objet</label><input type="text" id="emtpl-objet-' + t.code + '" value="' + escapeHtml(t.objet) + '"></div>' +
+        '<div class="field-s"><label>Corps</label><textarea id="emtpl-corps-' + t.code + '">' + escapeHtml(t.corps) + "</textarea></div>";
+      host.appendChild(div);
+    });
+    loadEmailEnvois();
+  }
+  async function saveEmailSettings(){
+    var msg = document.getElementById("email-save-msg");
+    var payload = {
+      fournisseur: document.getElementById("em-fournisseur").value,
+      sender_email: document.getElementById("em-sender-email").value.trim(),
+      sender_name: document.getElementById("em-sender-name").value.trim(),
+      actif: document.getElementById("em-actif").checked,
+      templates: []
+    };
+    Object.keys(emailTplLibelles).forEach(function(code){
+      payload.templates.push({
+        code: code,
+        objet: document.getElementById("emtpl-objet-" + code).value,
+        corps: document.getElementById("emtpl-corps-" + code).value
+      });
+    });
+    var key = document.getElementById("em-apikey").value.trim();
+    if(key !== "") payload.api_key = key;
+    msg.textContent = "";
+    var res = await apiFetch("/api/parametres/email", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    var d = await res.json().catch(function(){ return {}; });
+    if(res.ok){
+      msg.style.color = "var(--teal)";
+      msg.textContent = "Configuration enregistrée." + (d.has_key ? " Clé API configurée." : "");
+      loadEmailSettings();
+    } else {
+      msg.style.color = "var(--red)";
+      msg.textContent = d.message || "Échec de l'enregistrement.";
+    }
+  }
+  async function sendEmailTest(){
+    var msg = document.getElementById("email-test-msg");
+    var to = document.getElementById("em-test-to").value.trim();
+    if(!to){ msg.style.color = "var(--red)"; msg.textContent = "Renseignez l'adresse destinataire."; return; }
+    msg.style.color = "var(--ink-soft)";
+    msg.textContent = "Envoi en cours…";
+    var res = await apiFetch("/api/parametres/email/test", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ destinataire: to })
+    });
+    var d = await res.json().catch(function(){ return {}; });
+    if(res.ok){ msg.style.color = "var(--teal)"; msg.textContent = "Email de test envoyé à " + to + "."; }
+    else { msg.style.color = "var(--red)"; msg.textContent = d.message || "Échec de l'envoi."; }
+    loadEmailEnvois();
+  }
+  async function loadEmailEnvois(){
+    var body = document.getElementById("em-envois-body");
+    var res;
+    try{ res = await apiFetch("/api/parametres/email/envois", { method: "GET" }); }catch(e){ return; }
+    if(!res.ok){ body.innerHTML = '<tr><td colspan="6" style="color:var(--red);">Chargement du journal impossible.</td></tr>'; return; }
+    var d = await res.json().catch(function(){ return { envois: [] }; });
+    var rows = (d.envois || []).map(function(e){
+      var badge = e.statut === "envoye"
+        ? '<span class="status-badge status-selected">Envoyé</span>'
+        : (e.statut === "echec"
+          ? '<span class="status-badge status-rejet">Échec</span>'
+          : '<span class="status-badge status-amber">Ignoré</span>');
+      var when = e.date ? new Date(e.date).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+      var detail = e.detail ? ' title="' + escapeHtml(e.detail) + '"' : "";
+      return "<tr><td>" + when + "</td><td>" + (e.candidat ? escapeHtml(e.candidat) : "—") + "</td><td" + detail + ">" + escapeHtml(emailTplLibelles[e.code] || e.code) + "</td><td>" + escapeHtml(e.destinataire || "—") + "</td><td>" + escapeHtml(e.fournisseur || "—") + "</td><td>" + badge + "</td></tr>";
+    });
+    body.innerHTML = rows.join("") || '<tr><td colspan="6" style="color:var(--ink-soft);">Aucun envoi pour l\'instant.</td></tr>';
+  }
+
+  // ---------- PARAMÈTRES > JOURNAL D'AUDIT (ÉTAPE 7) ----------
+  async function loadAudit(){
+    var body = document.getElementById("audit-body");
+    if(!body) return;
+    var params = new URLSearchParams();
+    var u = document.getElementById("audit-username").value.trim();
+    var a = document.getElementById("audit-action").value.trim();
+    var q = document.getElementById("audit-q").value.trim();
+    if(u) params.set("username", u);
+    if(a) params.set("action", a);
+    if(q) params.set("q", q);
+    var res;
+    try{ res = await apiFetch("/api/audit?" + params.toString(), { method: "GET" }); }catch(e){ return; }
+    if(!res.ok){ body.innerHTML = '<tr><td colspan="5" style="color:var(--red);">Chargement du journal d\'audit impossible.</td></tr>'; return; }
+    var d = await res.json().catch(function(){ return { events: [] }; });
+    var rows = (d.events || []).map(function(e){
+      var when = e.date ? new Date(e.date).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—";
+      var cible = (e.cibleType && e.cibleId) ? escapeHtml(e.cibleType + " : " + e.cibleId) : (e.cibleId ? escapeHtml(e.cibleId) : "—");
+      var detail = e.detail ? escapeHtml(JSON.stringify(e.detail)) : "";
+      return "<tr><td>" + when + "</td><td>" + (e.username ? escapeHtml(e.username) : "—") + "</td><td>" + escapeHtml(e.action) + "</td><td>" + cible + "</td><td>" + detail + "</td></tr>";
+    });
+    body.innerHTML = rows.join("") || '<tr><td colspan="5" style="color:var(--ink-soft);">Aucun événement avec ces filtres.</td></tr>';
+  }
+
+  async function deleteAccount(u){
+    if(!confirm("Supprimer l'accès « " + u + " » ? L'accès sera désactivé (le compte ne pourra plus se connecter) ; action réversible en base.")) return;
+    var res = await apiFetch("/api/comptes/" + encodeURIComponent(u), { method: "DELETE" });
+    if(!res.ok){ alert("Suppression impossible."); return; }
+    renderSettings();
+  }
+
+  async function resetAccountPassword(u){
+    if(!confirm("Générer un nouveau lien d'activation pour « " + u + " » ? Son mot de passe actuel sera désactivé jusqu'à ce qu'elle/il en définisse un nouveau.")) return;
+    var res = await apiFetch("/api/comptes/" + encodeURIComponent(u) + "/reset", { method: "POST" });
+    if(!res.ok){ alert("Réinitialisation impossible."); return; }
+    var data = await res.json().catch(function(){ return {}; });
+    renderSettings();
+    openActivationLinkModal(data.email || u, data.link || "", data.prenom || "");
+  }
+
+  function openAccountModal(role, username){
+    accModalRole = role;
+    accModalEditing = username || null;
+    var acc = username ? (settingsAccounts[username] || null) : null;
+    document.getElementById("account-modal-title").textContent = username
+      ? "Modifier l'accès " + (role === "manager" ? "manager" : "recruteur")
+      : "Ajouter un accès " + (role === "manager" ? "manager" : "recruteur");
+    var uField = document.getElementById("acc-username");
+    uField.value = acc ? username : "";
+    uField.disabled = false;
+    document.getElementById("acc-nom").value = acc ? (acc.nom || "") : "";
+    document.getElementById("acc-prenom").value = acc ? (acc.prenom || "") : "";
+    document.getElementById("acc-email").value = acc ? (acc.email || "") : "";
+    document.getElementById("acc-modal-note").textContent = acc
+      ? "Le mot de passe n'est pas modifiable ici. Utilisez « Réinitialiser le mot de passe » dans la liste pour envoyer un nouveau lien d'activation. Si vous modifiez l'identifiant, la personne devra se reconnecter avec le nouvel identifiant."
+      : "Aucun mot de passe à saisir ici : un lien d'activation sera généré pour permettre à la personne de définir elle-même son mot de passe.";
+    [uField, document.getElementById("acc-nom"), document.getElementById("acc-prenom"), document.getElementById("acc-email")].forEach(function(el){ el.classList.remove("input-error"); });
+
+    var projetField = document.getElementById("acc-projet-field");
+    var projetSel = document.getElementById("acc-projet");
+    if(role === "manager"){
+      projetField.style.display = "block";
+      projetSel.innerHTML = '<option value="">— Sélectionner —</option>' +
+        PROJET_OPTS.map(function(p){ return '<option value="' + escapeHtml(p) + '"' + (acc && acc.projet === p ? " selected" : "") + '>' + escapeHtml(p) + '</option>'; }).join("");
+      projetSel.classList.remove("input-error");
+    } else {
+      projetField.style.display = "none";
+    }
+    document.getElementById("account-overlay").style.display = "flex";
+  }
+  function isConcentrixEmail(v){
+    var s = (v || "").trim().toLowerCase();
+    var at = s.indexOf("@");
+    if(at <= 0 || at === s.length - 1) return false;
+    // format email basique
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) return false;
+    var domain = s.slice(at + 1);
+    var suffix = ".concentrix.com";
+    return domain === "concentrix.com" || domain.slice(-suffix.length) === suffix;
+  }
+  function closeAccountModal(){ document.getElementById("account-overlay").style.display = "none"; }
+  document.getElementById("account-modal-close").addEventListener("click", closeAccountModal);
+  document.getElementById("account-modal-cancel").addEventListener("click", closeAccountModal);
+  document.getElementById("account-overlay").addEventListener("click", function(e){ if(e.target === e.currentTarget) closeAccountModal(); });
+
+  document.getElementById("btn-add-manager").addEventListener("click", function(){ openAccountModal("manager", null); });
+  document.getElementById("btn-add-recruteur").addEventListener("click", function(){ openAccountModal("recruteur", null); });
+  document.getElementById("btn-email-save").addEventListener("click", saveEmailSettings);
+  document.getElementById("btn-email-test").addEventListener("click", sendEmailTest);
+  document.getElementById("btn-audit-refresh").addEventListener("click", loadAudit);
+  ["audit-username", "audit-action", "audit-q"].forEach(function(id2){
+    document.getElementById(id2).addEventListener("keydown", function(e){ if(e.key === "Enter") loadAudit(); });
+  });
+
+  document.getElementById("account-modal-save").addEventListener("click", async function(){
+    var uField = document.getElementById("acc-username");
+    var nomField = document.getElementById("acc-nom");
+    var prenomField = document.getElementById("acc-prenom");
+    var emailField = document.getElementById("acc-email");
+    var projetSel = document.getElementById("acc-projet");
+
+    var u = uField.value.trim().toLowerCase();
+    var nom = nomField.value.trim();
+    var prenom = prenomField.value.trim();
+    var email = emailField.value.trim();
+    var projet = accModalRole === "manager" ? projetSel.value : "";
+
+    var missing = [];
+    var uFormatOk = isConcentrixEmail(u);
+    uField.classList.toggle("input-error", !(u !== "" && uFormatOk));
+    if(!(u !== "" && uFormatOk)){
+      if(u === "") missing.push("identifiant");
+      else missing.push("identifiant (doit être une adresse email @concentrix.com)");
+    }
+
+    var nomOk = nom !== "";
+    nomField.classList.toggle("input-error", !nomOk);
+    if(!nomOk) missing.push("nom");
+
+    var prenomOk = prenom !== "";
+    prenomField.classList.toggle("input-error", !prenomOk);
+    if(!prenomOk) missing.push("prénom");
+
+    var emailOk = email !== "" && email.indexOf("@") > 0;
+    emailField.classList.toggle("input-error", !emailOk);
+    if(!emailOk) missing.push("email");
+
+    if(accModalRole === "manager"){
+      var projetOk = projet !== "";
+      projetSel.classList.toggle("input-error", !projetOk);
+      if(!projetOk) missing.push("projet du ressort");
+    }
+
+    if(missing.length){
+      alert("Merci de renseigner les champs obligatoires manquants :\n— " + missing.join("\n— "));
+      return;
+    }
+
+    var payload = { username: u, role: accModalRole, nom: nom, prenom: prenom, email: email, projet: projet };
+    try{
+      var res;
+      if(accModalEditing){
+        res = await apiFetch("/api/comptes/" + encodeURIComponent(accModalEditing), {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      }else{
+        res = await apiFetch("/api/comptes", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      }
+      var data = await res.json().catch(function(){ return {}; });
+      if(!res.ok){ alert(data.message || "Enregistrement impossible."); return; }
+      renderSettings();
+      closeAccountModal();
+      if(!accModalEditing) openActivationLinkModal(email, data.link || "", prenom);
+    }catch(err){
+      alert("Erreur de connexion au serveur.");
+    }
+  });
+
+  // Les statuts et la visibilité sont calculés par l'API (mêmes règles métier que
+  // l'app d'origine) ; chaque candidat sérialisé porte déjà son code `statut`.
+  var STATUT_LABELS = {
+    SELECTED:{label:"SELECTED", cls:"selected"},
+    PREVIVER:{label:"PRÉ-VIVIER", cls:"amber"},
+    REJET:{label:"REJET", cls:"rejet"},
+    EN_ATTENTE:{label:"EN ATTENTE", cls:"pending"}
+  };
+  function statutInfo(c){ return STATUT_LABELS[c.statut] || STATUT_LABELS.EN_ATTENTE; }
+
+  function escapeHtml(str){
+    return String(str == null ? "" : str).replace(/[&<>"']/g, function(c){
+      return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];
+    });
+  }
+  function todayStr(){
+    var d = new Date();
+    var m = String(d.getMonth()+1).padStart(2,"0");
+    var day = String(d.getDate()).padStart(2,"0");
+    return d.getFullYear() + "-" + m + "-" + day;
+  }
+
+  // ---------- TABLE ----------
+  function buildTableHead(){
+    var cols = ["Candidat","Sexe","Téléphone","Email","Moyenne SHL","Niveau d'étude","Statut",""];
+    document.getElementById("table-head").innerHTML = "<tr>" + cols.map(function(c){ return "<th>" + c + "</th>"; }).join("") + "</tr>";
+  }
+
+  // La liste est servie par l'API (filtrage par rôle inclus : seuil SHL, périmètre
+  // recruteur / manager) ; la recherche se fait côté front sur la dernière liste
+  // reçue, débouncée — comportement identique à l'app d'origine.
+  var searchDebounce = null;
+  var listData = null;
+
+  async function render(){
+    var body = document.getElementById("table-body");
+    body.innerHTML = "";
+    try{
+      var res = await apiFetch("/api/candidats", { method: "GET" });
+      if(!res.ok) throw new Error("http-" + res.status);
+      listData = (await res.json()).candidates;
+    }catch(e){
+      listData = null;
+      document.getElementById("empty-state").style.display = "block";
+      document.getElementById("empty-sub").textContent = "Impossible de charger la liste des candidats (API indisponible).";
+      document.getElementById("count-label").textContent = "0 candidat";
+      return;
+    }
+    renderListFromCache();
+  }
+  function renderListFromCache(){
+    var q = document.getElementById("search").value.trim().toLowerCase();
+    var body = document.getElementById("table-body");
+    body.innerHTML = "";
+    var scoped = listData || [];
+    var filtered = scoped.filter(function(c){
+      if(!q) return true;
+      var hay = (c.nom + " " + c.prenom + " " + c.email).toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+    document.getElementById("empty-state").style.display = scoped.length === 0 ? "block" : "none";
+    if(currentRole === "recruteur"){
+      document.getElementById("empty-sub").textContent = "Aucun nouveau candidat à recevoir en entretien RH pour le moment.";
+    } else if(currentRole === "manager"){
+      document.getElementById("empty-sub").textContent = "Aucun candidat ne vous a été affecté par le recruteur pour le moment.";
+    } else {
+      document.getElementById("empty-sub").textContent = "Importez un fichier CSV pour remplir la liste.";
+    }
+    document.getElementById("count-label").textContent =
+      filtered.length + " candidat" + (filtered.length !== 1 ? "s" : "") +
+      (q && filtered.length !== scoped.length ? " (sur " + scoped.length + ")" : "");
+    filtered.forEach(function(c){
+      var tr = document.createElement("tr");
+      var st = statutInfo(c);
+      tr.innerHTML =
+        '<td><div class="name-cell">' + escapeHtml(c.nom) + " " + escapeHtml(c.prenom) + '</div></td>' +
+        '<td>' + escapeHtml(c.sexe || "—") + '</td>' +
+        '<td>' + escapeHtml(c.contact) + '</td>' +
+        '<td>' + escapeHtml(c.email) + '</td>' +
+        '<td class="score">' + c.moyenne.toFixed(1) + '</td>' +
+        '<td>' + escapeHtml(c.niveauEtude || "—") + '</td>' +
+        '<td><span class="status-badge status-' + st.cls + '>' + st.label + '</span></td>' +
+        '<td><button class="btn-view" data-id="' + c.id + '>Voir</button></td>';
+      body.appendChild(tr);
+    });
+    body.querySelectorAll(".btn-view").forEach(function(btn){
+      btn.addEventListener("click", function(){ openModal(btn.getAttribute("data-id")); });
+    });
+  }
+  document.getElementById("search").addEventListener("input", function(){
+    if(searchDebounce) clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(renderListFromCache, 200);
+  });
+
+  // ---------- PRÉ-VIVIER ----------
+  async function renderPrevivier(){
+    var body = document.getElementById("previvier-body");
+    body.innerHTML = "";
+    var items;
+    try{
+      var res = await apiFetch("/api/previvier", { method: "GET" });
+      if(!res.ok) throw new Error("http-" + res.status);
+      items = (await res.json()).items;
+    }catch(e){
+      body.innerHTML = '<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--ink-soft);">Impossible de charger le pré-vivier (API indisponible).</td></tr>';
+      return;
+    }
+    document.getElementById("previvier-count").textContent = items.length + " candidat" + (items.length !== 1 ? "s" : "") + " en attente d'affectation";
+    if(items.length === 0){
+      body.innerHTML = '<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--ink-soft);">Aucun candidat en pré-vivier pour le moment. Les candidats validés par l\'entretien RH apparaîtront ici.</td></tr>';
+      return;
+    }
+    items.forEach(function(it){
+      var c = it.candidat;
+      var roundIndex = it.roundIndex;
+      var stage = STAGES.find(function(s){ return s.key === it.round; }) || STAGES[0];
+      var dejaTraites = it.projetsTraites;
+      var assigned = c.projet || "";
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        '<td><div class="name-cell">' + escapeHtml(c.nom) + " " + escapeHtml(c.prenom) + '</div></td>' +
+        '<td>' + escapeHtml(stage.label) + ' <span style="color:var(--ink-soft);font-size:11.5px;">(tour ' + roundIndex + '/3)</span></td>' +
+        '<td>' +
+          '<select class="previvier-select" data-id="' + c.id + '" style="padding:7px 9px;border:1px solid var(--line);border-radius:2px;background:var(--paper);font-size:13px;color:var(--ink);min-width:170px;">' +
+            '<option value="">— Choisir un projet —</option>' +
+            PROJET_OPTS.map(function(p){
+              var used = dejaTraites.indexOf(p) !== -1;
+              return '<option value="' + escapeHtml(p) + '"' + (assigned === p ? " selected" : "") + (used ? " disabled" : "") + '>' + escapeHtml(p) + (used ? " (déjà reçu en entretien)" : "") + '</option>';
+            }).join("") +
+          '</select>' +
+        '</td>' +
+        '<td style="white-space:nowrap;">' +
+          '<button class="btn-view previvier-assign" data-id="' + c.id + '" style="margin-right:6px;">' + (assigned ? "Réaffecter" : "Affecter") + '</button>' +
+          '<button class="btn-view previvier-view" data-id="' + c.id + '>Voir</button>' +
+        '</td>';
+      body.appendChild(tr);
+    });
+    body.querySelectorAll(".previvier-assign").forEach(function(btn){
+      btn.addEventListener("click", async function(){
+        var id = btn.getAttribute("data-id");
+        var sel = body.querySelector('.previvier-select[data-id="' + id + ']');
+        var projet = sel.value;
+        if(!projet){ alert("Merci de choisir un projet avant d'affecter le candidat."); return; }
+        try{
+          var res = await apiFetch("/api/previvier/" + id + "/affecter", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ projet: projet })
+          });
+          if(!res.ok){
+            var d = await res.json().catch(function(){ return {}; });
+            throw new Error(d.message || "Affectation impossible.");
+          }
+        }catch(err){
+          alert(err.message || "Affectation impossible.");
+          return;
+        }
+        renderPrevivier();
+      });
+    });
+    body.querySelectorAll(".previvier-view").forEach(function(btn){
+      btn.addEventListener("click", function(){ openModal(btn.getAttribute("data-id")); });
+    });
+  }
+
+  // ---------- IMPORT CSV / EXCEL ----------
+  function triggerImport(){ document.getElementById("csv-input").click(); }
+  document.getElementById("btn-import").addEventListener("click", triggerImport);
+  document.getElementById("btn-import-2").addEventListener("click", triggerImport);
+
+  // L'import est traité CÔTE SERVEUR (Excel/CSV, détection des colonnes, notes SHL,
+  // dédoublonnage par email) — logique identique à l'app d'origine.
+  document.getElementById("csv-input").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var form = new FormData();
+    form.append("file", file);
+    var headers = {};
+    if(session && session.access) headers["Authorization"] = "Bearer " + session.access;
+    fetch("/api/candidats/import", { method: "POST", headers: headers, body: form })
+      .then(function(res){
+        return res.json().then(function(d){ return { ok: res.ok, d: d }; });
+      })
+      .then(function(out){
+        if(!out.ok) throw new Error(out.d.message || "Import impossible.");
+        alert(
+          out.d.added + " candidat(s) importé(s), dont " + out.d.visibles + " avec une moyenne SHL ≥ " + SEUIL + " affiché(s) dans la liste.\n" +
+          out.d.doublons + " doublon(s) détecté(s) (email déjà présent) et ignoré(s)."
+        );
+        render();
+      })
+      .catch(function(err){
+        alert(err.message || "Import impossible : vérifiez le format du fichier (Excel/CSV).");
+      });
+    e.target.value = "";
+  });
+
+  // ---------- MODAL ----------
+  function checkGroupHtml(field, opts, selected, disabled){
+    return '<div class="check-group">' + opts.map(function(opt){
+      var checked = selected.indexOf(opt) !== -1 ? " checked" : "";
+      var dis = disabled ? " disabled" : "";
+      return '<label class="check-pill"><input type="checkbox" data-info-check="' + field + '" value="' + escapeHtml(opt) + '"' + checked + dis + '>' + escapeHtml(opt) + '</label>';
+    }).join("") + '</div>';
+  }
+
+  function renderIdentityBlock(c, editable){
+    var dis = editable ? "" : " disabled";
+    var box = document.createElement("div");
+    box.className = "section-block";
+    box.innerHTML =
+      '<h3>Identité du candidat</h3>' +
+      '<div class="section-sub">À corriger ici en cas d\'erreur de saisie lors de l\'import.</div>' +
+      '<div class="row2">' +
+        '<div class="field-s"><label>Nom</label><input type="text" id="identity-nom" value="' + escapeHtml(c.nom) + '"' + dis + '></div>' +
+        '<div class="field-s"><label>Prénom</label><input type="text" id="identity-prenom" value="' + escapeHtml(c.prenom) + '"' + dis + '></div>' +
+      '</div>' +
+      '<div class="row2" style="margin-bottom:0;">' +
+        '<div class="field-s"><label>Email</label><input type="email" id="identity-email" value="' + escapeHtml(c.email) + '"' + dis + '></div>' +
+        '<div class="field-s"><label>Téléphone</label><input type="text" id="identity-contact" value="' + escapeHtml(c.contact) + '"' + dis + '></div>' +
+      '</div>';
+    return box;
+  }
+
+  function renderInfoSectionFull(c, editable){
+    var dis = editable ? "" : " disabled";
+    var box = document.createElement("div");
+    box.className = "section-block";
+    box.innerHTML =
+      '<h3>Informations candidat</h3>' +
+      '<div class="section-sub">Champs obligatoires marqués d\'un *</div>' +
+      '<div class="row3">' +
+        '<div class="field-s"><label>Âge <span class="req">*</span></label><input type="number" min="18" max="99" id="info-age" value="' + escapeHtml(c.age) + '"' + dis + '></div>' +
+        '<div class="field-s"><label>Sexe <span class="req">*</span></label><select id="info-sexe"' + dis + '><option value="">— Sélectionner —</option><option value="Homme"' + (c.sexe==="Homme"?" selected":"") + '>Homme</option><option value="Femme"' + (c.sexe==="Femme"?" selected":"") + '>Femme</option></select></div>' +
+        '<div class="field-s"><label>Résidence <span class="req">*</span></label>' +
+          '<div class="residence-wrap">' +
+            '<input type="text" id="info-residence" placeholder="Adresse de résidence" value="' + escapeHtml(c.residence) + '"' + dis + '>' +
+            '<input type="hidden" id="info-residence-departement" value="' + escapeHtml(c.departement || "") + '">' +
+            '<input type="hidden" id="info-residence-ville" value="' + escapeHtml(c.ville || "") + '">' +
+            '<input type="hidden" id="info-residence-lat" value="' + (c.residenceLat != null ? c.residenceLat : "") + '">' +
+            '<input type="hidden" id="info-residence-lng" value="' + (c.residenceLng != null ? c.residenceLng : "") + '">' +
+            (dis === "" ? '<div class="residence-hint" id="residence-hint"></div>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="row2">' +
+        '<div class="field-s"><label>Niveau d\'étude <span class="req">*</span></label><select id="info-niveau"' + dis + '>' +
+          '<option value="">— Sélectionner —</option>' +
+          NIVEAU_OPTS.map(function(n){ return '<option value="'+n+'"'+(c.niveauEtude===n?" selected":"")+'>'+n+'</option>'; }).join("") +
+        '</select></div>' +
+        '<div class="field-s"><label>Domaine d\'étude <span class="req" id="domaine-req">*</span></label><input type="text" id="info-domaine" value="' + escapeHtml(c.domaineEtude) + '" placeholder="ex : Commerce, Finance…"' + dis + '></div>' +
+      '</div>' +
+      '<div class="shl-notes">Notes SHL : ' + c.notes.join(' / ') + ' — Moyenne : ' + c.moyenne.toFixed(1) + '</div>' +
+      '<div class="field-s"><label>Expériences en relation client chez d\'autres concurrents</label>' +
+        '<select id="info-experience"' + dis + '>' +
+          '<option value="">— Sélectionner —</option>' +
+          EXPERIENCE_OPTS.map(function(x){ return '<option value="'+escapeHtml(x)+'"'+(c.experienceConcurrents===x?" selected":"")+'>'+escapeHtml(x)+'</option>'; }).join("") +
+        '</select></div>' +
+      '<div class="field-s"><label>Compétences linguistiques</label>' + checkGroupHtml("langues", LANGUES_OPTS, c.langues, !editable) + '</div>' +
+      '<div class="field-s" style="margin-bottom:0;"><label>Compétences informatiques</label>' + checkGroupHtml("informatique", INFO_OPTS, c.informatique, !editable) + '</div>';
+    return box;
+  }
+
+  // Le domaine d'étude n'est pas obligatoire pour les niveaux BAC et BEPC.
+  function wireDomaineRequirement(){
+    var niveauSel = document.getElementById("info-niveau");
+    var domaineReq = document.getElementById("domaine-req");
+    if(!niveauSel || !domaineReq) return;
+    function update(){
+      var optional = niveauSel.value === "BAC" || niveauSel.value === "BEPC";
+      domaineReq.style.display = optional ? "none" : "inline";
+    }
+    niveauSel.addEventListener("change", update);
+    update();
+  }
+
+  function renderInfoSummaryReadOnly(c){
+    var box = document.createElement("div");
+    box.className = "section-block";
+    var rows = [
+      ["Niveau d'étude", c.niveauEtude || "—"],
+      ["Domaine d'étude", c.domaineEtude || "—"],
+      ["Projet", c.projet || "—"],
+      ["Score SHL (moyenne)", c.moyenne.toFixed(1)]
+    ];
+    box.innerHTML = '<h3>Informations candidat</h3><div class="summary-list" style="margin-top:12px;">' +
+      rows.map(function(r){ return '<div><span>'+r[0]+'</span>'+escapeHtml(r[1])+'</div>'; }).join("") +
+    '</div>';
+    return box;
+  }
+
+  function renderStageSection(c, stage, reachable, showLockContext){
+    var data = c.stages[stage.key];
+    var completed = data.decision !== "a_faire";
+    var editable = reachable && !completed;
+    var sec = document.createElement("div");
+    sec.className = "section-block" + (editable ? "" : " stage-locked");
+    var disAttr = editable ? "" : " disabled";
+    var html = '<h3>' + stage.label + '</h3>';
+    if(!reachable && showLockContext){
+      html += '<div class="locked-banner">Cette étape se débloque automatiquement si le candidat est déclaré KO à l\'étape précédente.</div>';
+    } else if(completed){
+      html += '<div class="locked-banner">Entretien déjà réalisé — cette fiche est verrouillée et ne peut plus être modifiée, y compris par l\'administration.</div>';
+    }
+
+    if(stage.hasRecruteur){
+      var recruteurVal = data.recruteur || (editable ? currentAccedantFullName() : "") || "—";
+      html += '<div class="field-s"><label>Recruteur ayant reçu le candidat</label>' +
+        '<input type="text" value="' + escapeHtml(recruteurVal) + '" disabled></div>';
+    }
+    if(stage.hasProjet){
+      html += '<div class="field-s"><label>Projet <span class="req">*</span></label>' +
+        '<select data-stage="' + stage.key + '" data-field="projet" data-required="1"' + disAttr + '>' +
+          '<option value="">— Sélectionner —</option>' +
+          PROJET_OPTS.map(function(p){ return '<option value="' + escapeHtml(p) + '"' + (data.projet === p ? " selected" : "") + '>' + escapeHtml(p) + '</option>'; }).join("") +
+        '</select></div>';
+    }
+    if(stage.hasNomManager){
+      var nomAffiche = data.nomManager || (currentRole === "manager" && editable ? currentManagerName : "") || "—";
+      html += '<div class="field-s"><label>Manager ayant mené l\'entretien</label>' +
+        '<input type="text" value="' + escapeHtml(nomAffiche) + '" disabled></div>';
+    }
+    if(stage.hasDate){
+      var dateVal = data.date || (editable ? todayStr() : "");
+      html += '<div class="field-s"><label>Date de l\'entretien <span class="req">*</span></label>' +
+        '<input type="date" data-stage="' + stage.key + '" data-field="date" data-required="1" value="' + escapeHtml(dateVal) + '"' + disAttr + '></div>';
+    }
+    if(stage.hasNote){
+      html += '<div class="field-s"><label>Note / résultat</label>' +
+        '<input type="text" data-stage="' + stage.key + '" data-field="note" value="' + escapeHtml(data.note) + '" placeholder="ex : 16/20"' + disAttr + '></div>';
+    }
+
+    html +=
+      '<div class="field-s"><label>Commentaire <span class="req">*</span></label>' +
+        '<textarea data-stage="' + stage.key + '" data-field="commentaire" data-required="1" placeholder="Observations de l\'entretien…"' + disAttr + '>' + escapeHtml(data.commentaire) + '</textarea></div>' +
+      '<div class="field-s" style="margin-bottom:0;"><label>Décision <span class="req">*</span></label>' +
+        '<select data-stage="' + stage.key + '" data-field="decision" data-required="1"' + disAttr + '>' +
+          '<option value="a_faire"' + (data.decision === "a_faire" ? " selected" : "") + '>À réaliser</option>' +
+          '<option value="ok"' + (data.decision === "ok" ? " selected" : "") + '>OK</option>' +
+          '<option value="ko"' + (data.decision === "ko" ? " selected" : "") + '>KO</option>' +
+          '<option value="mb"' + (data.decision === "mb" ? " selected" : "") + '>MB</option>' +
+        '</select></div>';
+    sec.innerHTML = html;
+    return sec;
+  }
+
+  function renderHistoryBlock(c){
+    var done = STAGES.filter(function(s){ return c.stages[s.key].decision !== "a_faire"; });
+    if(!done.length) return null;
+
+    var decLabels = {ok:"OK", ko:"KO", mb:"MB"};
+    var decClasses = {ok:"selected", ko:"rejet", mb:"amber"};
+
+    var box = document.createElement("div");
+    box.className = "section-block";
+    var html = '<h3>Historique des entretiens</h3>' +
+      '<div class="section-sub">Toutes les étapes déjà réalisées pour ce candidat, quel que soit le résultat.</div>';
+
+    html += done.map(function(s){
+      var d = c.stages[s.key];
+      var person = s.hasNomManager ? d.nomManager : (s.hasRecruteur ? d.recruteur : "");
+      var rows = [];
+      if(person) rows.push([s.hasNomManager ? "Manager" : "Recruteur", person]);
+      if(s.hasDate && d.date) rows.push(["Date", d.date]);
+      if(d.projet) rows.push(["Projet", d.projet]);
+      if(s.hasNote && d.note) rows.push(["Note / résultat", d.note]);
+
+      return '<div class="history-item">' +
+        '<div class="history-item-head"><strong>' + escapeHtml(s.label) + '</strong>' +
+          '<span class="status-badge status-' + (decClasses[d.decision] || "pending") + '">' + (decLabels[d.decision] || d.decision) + '</span>' +
+        '</div>' +
+        (rows.length ? '<div class="summary-list" style="margin-top:8px;">' + rows.map(function(r){ return '<div><span>' + r[0] + '</span>' + escapeHtml(r[1]) + '</div>'; }).join("") + '</div>' : "") +
+        (d.commentaire ? '<div class="history-comment">' + escapeHtml(d.commentaire) + '</div>' : "") +
+      '</div>';
+    }).join("");
+
+    box.innerHTML = html;
+    return box;
+  }
+
+  function fillHeader(c){
+    document.getElementById("mh-name").textContent = c.nom + " " + c.prenom;
+    var initials = ((c.prenom || "").charAt(0) + (c.nom || "").charAt(0)).toUpperCase() || "—";
+    document.getElementById("mh-avatar").textContent = initials;
+    document.getElementById("mh-age").textContent = c.age ? (c.age + " ans") : "—";
+    document.getElementById("mh-sexe").textContent = c.sexe || "—";
+    document.getElementById("mh-niveau").textContent = c.niveauEtude || "—";
+    document.getElementById("mh-residence").textContent = c.residence || "—";
+    document.getElementById("mh-contact").textContent = c.contact || "—";
+    document.getElementById("mh-email").textContent = c.email || "—";
+    document.getElementById("mh-score").textContent = c.moyenne.toFixed(1);
+    var st = statutInfo(c);
+    var pill = document.getElementById("mh-statut-value");
+    pill.textContent = st.label;
+    pill.className = "tone-" + st.cls;
+  }
+
+  // Synchronise en temps réel l'entête avec les champs d'identité et
+  // de la rubrique "Informations candidat", sans attendre l'enregistrement.
+  function wireHeaderLiveSync(){
+    function bind(id, handler){
+      var el = document.getElementById(id);
+      if(!el) return;
+      el.addEventListener("input", handler);
+      el.addEventListener("change", handler);
+    }
+    function updateName(){
+      var nom = (document.getElementById("identity-nom") || {}).value || "";
+      var prenom = (document.getElementById("identity-prenom") || {}).value || "";
+      document.getElementById("mh-name").textContent = (nom + " " + prenom).trim() || "—";
+      var initials = ((prenom || "").charAt(0) + (nom || "").charAt(0)).toUpperCase() || "—";
+      document.getElementById("mh-avatar").textContent = initials;
+    }
+    bind("identity-nom", updateName);
+    bind("identity-prenom", updateName);
+    bind("identity-contact", function(e){ document.getElementById("mh-contact").textContent = e.target.value.trim() || "—"; });
+    bind("identity-email", function(e){ document.getElementById("mh-email").textContent = e.target.value.trim() || "—"; });
+    bind("info-age", function(e){ var v = e.target.value.trim(); document.getElementById("mh-age").textContent = v ? (v + " ans") : "—"; });
+    bind("info-sexe", function(e){ document.getElementById("mh-sexe").textContent = e.target.value || "—"; });
+    bind("info-niveau", function(e){ document.getElementById("mh-niveau").textContent = e.target.value || "—"; });
+    bind("info-residence", function(e){ document.getElementById("mh-residence").textContent = e.target.value.trim() || "—"; });
+    wireResidenceMap();
+  }
+
+  // ---------- GEOAPIFY — autocomplétion d'adresse (zone unique : Bénin) ----------
+  // Étape 6 : la clé n'est PLUS dans le navigateur — chaque requête passe par
+  // le proxy serveur /api/geo/search (clé dans l'env Vercel, HTTPS forcé,
+  // restreint au Bénin). L'interface est celle de l'app d'origine.
+  var BENIN_DEPARTEMENTS = ["Alibori","Atacora","Atlantique","Borgou","Collines","Couffo","Donga","Littoral","Mono","Ouémé","Plateau","Zou"];
+
+  function stripAccents(s){ return (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+  function guessDepartementFromText(text){
+    if(!text) return "";
+    var norm = stripAccents(text).toLowerCase();
+    for(var i=0;i<BENIN_DEPARTEMENTS.length;i++){
+      if(norm.indexOf(stripAccents(BENIN_DEPARTEMENTS[i]).toLowerCase()) !== -1) return BENIN_DEPARTEMENTS[i];
+    }
+    return "";
+  }
+  // Un résultat Geoapify porte le département dans "state" (parfois "county") ;
+  // on retombe sur une recherche textuelle si ces champs sont absents.
+  function extractDepartementFromGeoapifyResult(r){
+    if(!r) return "";
+    return guessDepartementFromText(r.state || r.county || r.formatted || "");
+  }
+  // La ville est portée par "city" (parfois "county" en zone rurale) sur un résultat Geoapify ;
+  // à défaut (saisie manuelle, import CSV), on retient le premier segment de l'adresse.
+  function guessVilleFromText(text){
+    if(!text) return "";
+    var first = String(text).split(",")[0].trim();
+    return first;
+  }
+  function extractVilleFromGeoapifyResult(r){
+    if(!r) return "";
+    if(r.city) return r.city;
+    if(r.county) return r.county;
+    return guessVilleFromText(r.formatted || "");
+  }
+  // Interroge le proxy serveur Geoapify (restreint au Bénin côté serveur).
+  async function geoapifyAutocomplete(query, cb){
+    try{
+      var res = await apiFetch("/api/geo/search?q=" + encodeURIComponent(query));
+      if(res.status === 503){ cb(new Error("no-key")); return; }
+      if(!res.ok){ cb(new Error("http-" + res.status)); return; }
+      var data = await res.json().catch(function(){ return { results: [] }; });
+      cb(null, data.results || []);
+    }catch(e){ cb(e); }
+  }
+
+  // Autocomplétion d'adresse Geoapify, restreinte au Bénin, pour faciliter
+  // et fiabiliser la saisie de la résidence du candidat.
+  function wireResidenceMap(){
+    var input = document.getElementById("info-residence");
+    var hintEl = document.getElementById("residence-hint");
+    var deptField = document.getElementById("info-residence-departement");
+    var villeField = document.getElementById("info-residence-ville");
+    var latField = document.getElementById("info-residence-lat");
+    var lngField = document.getElementById("info-residence-lng");
+    if(!input) return; // champ non éditable (lecture seule) : rien à câbler
+    if(input.disabled) return;
+
+    var wrap = input.closest(".residence-wrap");
+    var list = document.createElement("div");
+    list.className = "geoapify-suggestions";
+    wrap.appendChild(list);
+
+    var debounceTimer = null;
+    var currentResults = [];
+
+    function closeList(){ list.classList.remove("show"); list.innerHTML = ""; currentResults = []; }
+
+    function applyResult(r){
+      if(!r) return;
+      input.value = r.formatted || input.value;
+      var dept = extractDepartementFromGeoapifyResult(r);
+      if(dept && deptField) deptField.value = dept;
+      var ville = extractVilleFromGeoapifyResult(r);
+      if(ville && villeField) villeField.value = ville;
+      if(typeof r.lat === "number" && typeof r.lon === "number" && latField && lngField){
+        latField.value = r.lat;
+        lngField.value = r.lon;
+      }
+      var mh = document.getElementById("mh-residence");
+      if(mh) mh.textContent = input.value.trim() || "—";
+      closeList();
+    }
+
+    function renderList(results){
+      currentResults = results || [];
+      if(!currentResults.length){ closeList(); return; }
+      list.innerHTML = currentResults.map(function(r, i){
+        return '<div class="geoapify-suggestion" data-i="' + i + '">' + escapeHtml(r.formatted || "") + '</div>';
+      }).join("");
+      list.classList.add("show");
+    }
+
+    list.addEventListener("click", function(e){
+      var item = e.target.closest(".geoapify-suggestion");
+      if(!item) return;
+      applyResult(currentResults[parseInt(item.getAttribute("data-i"), 10)]);
+    });
+
+    input.addEventListener("input", function(){
+      var query = input.value.trim();
+      if(debounceTimer) clearTimeout(debounceTimer);
+      if(query.length < 2){ closeList(); return; }
+      debounceTimer = setTimeout(function(){
+        geoapifyAutocomplete(query, function(err, results){
+          if(err){
+            if(hintEl) hintEl.textContent = "Suggestions d'adresse indisponibles (service de géocodage ou configuration serveur à vérifier).";
+            closeList();
+            return;
+          }
+          if(hintEl) hintEl.textContent = "";
+          renderList(results);
+        });
+      }, 300); // attend une courte pause dans la saisie avant d'interroger l'API
+    });
+
+    document.addEventListener("click", function(e){
+      if(e.target !== input && !list.contains(e.target)) closeList();
+    });
+  }
+
+  // La fiche est servie par l'API (périmètre par rôle vérifié) ; les étapes
+  // débloquées et le tour du manager sont calculés côté serveur.
+  async function openModal(id){
+    var data;
+    try{
+      var res = await apiFetch("/api/candidats/" + id, { method: "GET" });
+      if(!res.ok) return;
+      data = await res.json();
+    }catch(e){ return; }
+    var c = data.candidat;
+    activeId = id;
+    fillHeader(c);
+
+    var body = document.getElementById("modal-body");
+    body.innerHTML = "";
+
+    if(currentRole === "rh"){
+      // RH dispose des pleins droits de modification, à tous les niveaux du dossier
+      // (identité, informations candidat, et l'ensemble des entretiens réalisés ou à venir).
+      body.appendChild(renderIdentityBlock(c, true));
+      body.appendChild(renderInfoSectionFull(c, true));
+      wireDomaineRequirement();
+      wireHeaderLiveSync();
+      var hist = renderHistoryBlock(c);
+      if(hist) body.appendChild(hist);
+      STAGES.forEach(function(stage){
+        body.appendChild(renderStageSection(c, stage, data.stages[stage.key].reachable, true));
+      });
+    } else if(currentRole === "recruteur"){
+      // Le recruteur peut modifier l'identité et toutes les informations du candidat,
+      // mais ne voit que la rubrique concernant son propre entretien (l'entretien RH) —
+      // pas les entretiens managers, qui ne le concernent pas.
+      body.appendChild(renderIdentityBlock(c, true));
+      body.appendChild(renderInfoSectionFull(c, true));
+      wireDomaineRequirement();
+      wireHeaderLiveSync();
+      var rhStage = STAGES.find(function(s){ return s.key === "rh"; });
+      body.appendChild(renderStageSection(c, rhStage, true, false));
+    } else if(currentRole === "manager"){
+      body.appendChild(renderInfoSummaryReadOnly(c));
+      var myStage = data.myRound ? STAGES.find(function(s){ return s.key === data.myRound; }) : null;
+      if(myStage) body.appendChild(renderStageSection(c, myStage, true, false));
+    }
+
+    // Purge RGPD (étape 7) — RH uniquement : effacement irréversible de tout
+    // ce qui concerne le candidat (fiche, entretiens, traces d'emails).
+    document.getElementById("modal-purge").style.display = currentRole === "rh" ? "inline-flex" : "none";
+    document.getElementById("save-note").classList.remove("show");
+    document.getElementById("overlay").style.display = "flex";
+  }
+  function closeModal(){ document.getElementById("overlay").style.display = "none"; activeId = null; }
+  document.getElementById("modal-close").addEventListener("click", closeModal);
+  document.getElementById("modal-cancel").addEventListener("click", closeModal);
+  document.getElementById("overlay").addEventListener("click", function(e){ if(e.target === e.currentTarget) closeModal(); });
+
+  // Purge RGPD : double confirmation + identifiant renvoyé en « confirmation »
+  // (côté serveur exige le même identifiant — aucun clic accidentel possible).
+  document.getElementById("modal-purge").addEventListener("click", async function(){
+    if(!activeId) return;
+    if(!confirm("PURGER (RGPD) ce candidat ?\n\nSa fiche, ses entretiens et toutes ses données associées seront effacés définitivement.\nCette action est IRRÉVERSIBLE.")){ return; }
+    if(!confirm("Confirmation finale : purge du candidat " + activeId + " ?")){ return; }
+    var res = await apiFetch("/api/candidats/" + activeId + "/purger", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ confirmation: activeId })
+    });
+    var d = await res.json().catch(function(){ return {}; });
+    if(!res.ok){ alert(d.message || "Purge impossible."); return; }
+    closeModal();
+    alert("Candidat purgé :\n— " + (d.purgee ? d.purgee.entretiens : 0) + " entretien(s) effacé(s)\n— " + (d.purgee ? d.purgee.envois_anonymises : 0) + " trace(s) d'email anonymisée(s)\n\nL'opération est consignée au journal d'audit.");
+    render();
+  });
+
+  // Validation des champs obligatoires (identique à l'app), puis envoi à l'API :
+  // identité + informations candidat (RH / recruteur) et entretiens tranchés.
+  // Les règles de verrouillage (entretien saisi = définitif, déblocage séquentiel,
+  // périmètre manager) sont appliquées CÔTE SERVEUR.
+  document.getElementById("modal-save").addEventListener("click", async function(){
+    var missingLabels = [];
+    var payload = {};
+
+    if(currentRole === "rh" || currentRole === "recruteur"){
+      var idNom = document.getElementById("identity-nom");
+      var idPrenom = document.getElementById("identity-prenom");
+      var idEmail = document.getElementById("identity-email");
+      var idContact = document.getElementById("identity-contact");
+      if(!idNom || idNom.value.trim() === "") missingLabels.push("nom");
+      payload.identity = {
+        nom: idNom ? idNom.value.trim() : "",
+        prenom: idPrenom ? idPrenom.value.trim() : "",
+        email: idEmail ? idEmail.value.trim() : "",
+        contact: idContact ? idContact.value.trim() : ""
+      };
+    }
+
+    if(currentRole === "rh" || currentRole === "recruteur"){
+      var age = document.getElementById("info-age");
+      var sexe = document.getElementById("info-sexe");
+      var residence = document.getElementById("info-residence");
+      var niveau = document.getElementById("info-niveau");
+      var domaine = document.getElementById("info-domaine");
+
+      var ageStr = age.value.trim();
+      var ageVal = parseInt(ageStr, 10);
+      var ageOk = ageStr !== "" && !isNaN(ageVal) && ageVal >= 18;
+      age.classList.toggle("input-error", !ageOk);
+      if(!ageOk) missingLabels.push(ageStr === "" ? "âge" : "âge (18 ans minimum)");
+
+      [[sexe,"sexe"],[residence,"résidence"],[niveau,"niveau d'étude"]].forEach(function(pair){
+        var ok = pair[0].value.trim() !== "";
+        pair[0].classList.toggle("input-error", !ok);
+        if(!ok) missingLabels.push(pair[1]);
+      });
+
+      var domaineRequired = niveau.value !== "BAC" && niveau.value !== "BEPC";
+      var domaineOk = !domaineRequired || domaine.value.trim() !== "";
+      domaine.classList.toggle("input-error", !domaineOk);
+      if(!domaineOk) missingLabels.push("domaine d'étude");
+
+      if(missingLabels.length === 0){
+        var deptField = document.getElementById("info-residence-departement");
+        var villeField = document.getElementById("info-residence-ville");
+        var latField = document.getElementById("info-residence-lat");
+        var lngField = document.getElementById("info-residence-lng");
+        var experience = document.getElementById("info-experience");
+        payload.info = {
+          age: age.value,
+          sexe: sexe.value,
+          residence: residence.value,
+          niveau: niveau.value,
+          domaine: domaine.value,
+          departement: deptField ? deptField.value : "",
+          ville: villeField ? villeField.value : "",
+          residenceLat: latField ? latField.value : "",
+          residenceLng: lngField ? lngField.value : "",
+          experience: experience ? experience.value : "",
+          langues: Array.prototype.slice.call(document.querySelectorAll('[data-info-check="langues"]:checked')).map(function(el){ return el.value; }),
+          informatique: Array.prototype.slice.call(document.querySelectorAll('[data-info-check="informatique"]:checked')).map(function(el){ return el.value; })
+        };
+      }
+    }
+
+    var FIELD_LABELS = {recruteur:"recruteur", projet:"projet", date:"date de l'entretien", commentaire:"commentaire", decision:"décision (OK, KO ou MB)"};
+    document.querySelectorAll('#modal-body [data-required="1"]').forEach(function(el){
+      if(el.disabled) return;
+      var field = el.getAttribute("data-field");
+      // La décision doit être explicitement tranchée : "À réaliser" ne peut pas être enregistré.
+      var ok = field === "decision" ? el.value !== "a_faire" : el.value.trim() !== "";
+      el.classList.toggle("input-error", !ok);
+      if(!ok){
+        var stageLbl = STAGES.find(function(s){ return s.key === el.getAttribute("data-stage"); });
+        var fieldLbl = FIELD_LABELS[field] || field;
+        missingLabels.push((stageLbl ? stageLbl.label + " — " : "") + fieldLbl);
+      }
+    });
+
+    if(missingLabels.length){
+      alert("Merci de renseigner les champs obligatoires manquants :\n— " + missingLabels.join("\n— "));
+      return;
+    }
+
+    payload.stages = {};
+    document.querySelectorAll("#modal-body [data-stage]").forEach(function(el){
+      if(el.disabled) return;
+      var stage = el.getAttribute("data-stage");
+      if(!payload.stages[stage]) payload.stages[stage] = { note: "", date: "", commentaire: "", decision: "a_faire" };
+      payload.stages[stage][el.getAttribute("data-field")] = el.value;
+    });
+    // Seuls les entretiens réellement tranchés sont envoyés ; "À réaliser" reste à faire.
+    Object.keys(payload.stages).forEach(function(k){
+      if(payload.stages[k].decision === "a_faire") delete payload.stages[k];
+    });
+
+    try{
+      var res = await apiFetch("/api/candidats/" + activeId, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if(!res.ok){
+        var d = await res.json().catch(function(){ return {}; });
+        if(d.missing && d.missing.length){
+          throw new Error("Merci de renseigner les champs obligatoires manquants :\n— " + d.missing.join("\n— "));
+        }
+        throw new Error(d.message || "Enregistrement impossible.");
+      }
+    }catch(err){
+      alert(err.message || "Enregistrement impossible.");
+      return;
+    }
+    render();
+    if(currentView === "previvier") renderPrevivier();
+    closeModal();
+  });
+
+  // ---------- STATISTIQUES ----------
+  function populateStatsFilterOptions(){
+    var nSel = document.getElementById("f-niveau");
+    nSel.innerHTML = '<option value="">Tous</option>' + NIVEAU_OPTS.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join("");
+    var pSel = document.getElementById("f-projet");
+    pSel.innerHTML = '<option value="">Tous</option>' + PROJET_OPTS.map(function(p){ return '<option value="'+escapeHtml(p)+'">'+escapeHtml(p)+'</option>'; }).join("");
+  }
+  ["f-from","f-to","f-sexe","f-niveau","f-projet","f-geoloc","f-statut"].forEach(function(id){
+    document.getElementById(id).addEventListener("change", renderStats);
+  });
+  document.getElementById("f-reset").addEventListener("click", function(){
+    ["f-from","f-to","f-sexe","f-niveau","f-projet","f-statut"].forEach(function(id){ document.getElementById(id).value = ""; });
+    document.getElementById("f-geoloc").value = "non";
+    renderStats();
+  });
+
+  // Les métriques sont calculées par l'API (mêmes filtres, mêmes règles) ;
+  // la répartition par ville n'est retournée que si "Géolocalisation" = Oui.
+  async function renderStats(){
+    var from = document.getElementById("f-from").value;
+    var to = document.getElementById("f-to").value;
+    var sexe = document.getElementById("f-sexe").value;
+    var niveau = document.getElementById("f-niveau").value;
+    var projet = document.getElementById("f-projet").value;
+    var geoloc = document.getElementById("f-geoloc").value;
+    var statut = document.getElementById("f-statut").value;
+    var params = new URLSearchParams();
+    if(from) params.set("from", from);
+    if(to) params.set("to", to);
+    if(sexe) params.set("sexe", sexe);
+    if(niveau) params.set("niveau", niveau);
+    if(projet) params.set("projet", projet);
+    if(geoloc) params.set("geoloc", geoloc);
+    if(statut) params.set("statut", statut);
+    var s;
+    try{
+      var res = await apiFetch("/api/stats?" + params.toString(), { method: "GET" });
+      if(!res.ok) throw new Error("http-" + res.status);
+      s = await res.json();
+    }catch(e){
+      document.getElementById("stat-grid").innerHTML = '<div class="stat-card"><div class="v">—</div><div class="l">API indisponible</div></div>';
+      return;
+    }
+    var grid = document.getElementById("stat-grid");
+    grid.innerHTML = [
+      ["Candidats (filtre)", s.total],
+      ["Entretiens RH / période", s.rhEntretiens],
+      ["Entretiens Manager / période", s.mgrEntretiens],
+      ["Hommes", s.hommes],
+      ["Femmes", s.femmes],
+      ["Moyenne SHL du groupe", s.moyenne.toFixed(1)]
+    ].map(function(x){ return '<div class="stat-card"><div class="v">' + x[1] + '</div><div class="l">' + x[0] + '</div></div>'; }).join("");
+
+    document.getElementById("tbl-niveau").innerHTML = '<h4>Par niveau d\'étude</h4>' +
+      NIVEAU_OPTS.map(function(n){ return '<div class="row"><span>' + n + '</span><span class="n">' + (s.parNiveau[n] || 0) + '</span></div>'; }).join("");
+
+    document.getElementById("tbl-statut").innerHTML = '<h4>Par statut</h4>' +
+      Object.keys(s.parStatut).map(function(k){ return '<div class="row"><span>' + STATUT_LABELS[k].label + '</span><span class="n">' + s.parStatut[k] + '</span></div>'; }).join("");
+
+    // Répartition géographique : n'apparaît que si "Géolocalisation" = Oui.
+    // Ne porte que sur les candidats effectivement reçus en entretien RH (décision RH déjà renseignée),
+    // et affiche le pourcentage (et le nombre) par ville de résidence, parmi ce sous-ensemble.
+    var tblDept = document.getElementById("tbl-departement");
+    if(geoloc === "oui"){
+      var villeRows = s.parVille || [];
+      var totalRecusRh = s.totalRecusRh || 0;
+      tblDept.style.display = "";
+      tblDept.innerHTML = '<h4>Répartition géographique (par ville) — candidats reçus en entretien RH</h4>' +
+        (villeRows.length
+          ? villeRows.map(function(row){
+              var pct = totalRecusRh ? Math.round((row[1] / totalRecusRh) * 100) : 0;
+              return '<div class="row"><span>'+escapeHtml(row[0])+'</span><span class="n">'+pct+'% ('+row[1]+'</span></div>';
+            }).join("")
+          : '<div class="row"><span>Aucun candidat reçu en entretien RH</span></div>');
+    } else {
+      tblDept.style.display = "none";
+      tblDept.innerHTML = "";
+    }
+
+    document.getElementById("tbl-rh").innerHTML = '<h4>Entretiens RH sur la période (décision)</h4>' +
+      '<div class="row"><span>OK</span><span class="n">'+s.rhDecisions.ok+'</span></div>' +
+      '<div class="row"><span>KO</span><span class="n">'+s.rhDecisions.ko+'</span></div>' +
+      '<div class="row"><span>MB</span><span class="n">'+s.rhDecisions.mb+'</span></div>';
+
+    document.getElementById("tbl-manager").innerHTML = '<h4>Entretiens Manager sur la période (décision)</h4>' +
+      '<div class="row"><span>OK</span><span class="n">'+s.mgrDecisions.ok+'</span></div>' +
+      '<div class="row"><span>KO</span><span class="n">'+s.mgrDecisions.ko+'</span></div>' +
+      '<div class="row"><span>MB</span><span class="n">'+s.mgrDecisions.mb+'</span></div>';
+  }
+
+  // ---------- PV DE SYNTHÈSE (MANAGER) ----------
+  // Rassemble tous les entretiens que CE manager a réellement menés sur SON projet
+  // (identifiés par nomManager + projet enregistrés sur chaque tour, quel que soit le tour :
+  // m1, m2 ou m3), une fois la décision finalisée (OK, KO ou MB).
+  // Le PV est servi par l'API : entretiens finalisés (OK, KO ou MB) menés par CE
+  // manager (nom de session) sur SON projet, quel que soit le tour (m1, m2, m3),
+  // triés par date puis par candidat, avec les compteurs OK / KO / MB.
+  async function renderPV(){
+    var pv;
+    try{
+      var res = await apiFetch("/api/pv", { method: "GET" });
+      if(!res.ok) throw new Error("http-" + res.status);
+      pv = await res.json();
+    }catch(e){
+      document.getElementById("pv-print-area").innerHTML = '<div class="pv-empty">Impossible de charger le PV de synthèse (API indisponible).</div>';
+      return;
+    }
+    var decLabels = {ok:"OK", ko:"KO", mb:"MB"};
+    var decClasses = {ok:"selected", ko:"rejet", mb:"amber"};
+    var total = pv.total;
+    var rows = pv.rows;
+
+    var html = '<div class="pv-meta summary-list">' +
+      '<div><span>Date d\'édition</span>' + escapeHtml(pv.dateEdition) + '</div>' +
+      '<div><span>Manager</span>' + escapeHtml(pv.manager || "—") + '</div>' +
+      '<div><span>Projet</span>' + escapeHtml(pv.projet || "—") + '</div>' +
+      '<div><span>Candidats reçus</span>' + total + '</div>' +
+    '</div>';
+
+    html += '<div class="stat-grid">' +
+      [["Candidats reçus", total], ["OK", pv.ok], ["KO", pv.ko], ["MB", pv.mb]]
+        .map(function(x){ return '<div class="stat-card"><div class="v">' + x[1] + '</div><div class="l">' + x[0] + '</div></div>'; }).join("") +
+    '</div>';
+
+    if(total === 0){
+      html += '<div class="pv-empty">Aucun entretien finalisé (OK, KO ou MB) pour l\'instant sur ce projet.</div>';
+    } else {
+      html += '<div class="table-wrap"><table><thead><tr>' +
+          '<th>Candidat</th><th>Étape</th><th>Date</th><th>Décision</th><th>Commentaire</th>' +
+        '</tr></thead><tbody>' +
+        rows.map(function(r){
+          return '<tr>' +
+            '<td>' + escapeHtml(r.candidat) + '</td>' +
+            '<td>' + escapeHtml(r.etapeLabel) + '</td>' +
+            '<td>' + escapeHtml(r.date || "—") + '</td>' +
+            '<td><span class="status-badge status-' + (decClasses[r.decision] || "pending") + '>' + (decLabels[r.decision] || r.decision) + '</span></td>' +
+            '<td>' + escapeHtml(r.commentaire || "—") + '</td>' +
+          '</tr>';
+        }).join("") +
+      '</tbody></table></div>';
+    }
+
+    document.getElementById("pv-print-area").innerHTML = html;
+  }
+
+  document.getElementById("btn-generate-pv").addEventListener("click", function(){
+    renderPV();
+    document.getElementById("pv-overlay").style.display = "flex";
+  });
+  function closePV(){ document.getElementById("pv-overlay").style.display = "none"; }
+  document.getElementById("pv-close").addEventListener("click", closePV);
+  document.getElementById("pv-close-2").addEventListener("click", closePV);
+  document.getElementById("pv-overlay").addEventListener("click", function(e){ if(e.target === e.currentTarget) closePV(); });
+  document.getElementById("pv-print").addEventListener("click", function(){ window.print(); });
+
+  (async function boot(){
+    loadSession();
+    if(!await checkActivationLink()){
+      await checkSession();
+    }
+  })();
+})();
+</script>
+</body>
+</html>

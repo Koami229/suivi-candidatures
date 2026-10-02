@@ -1,0 +1,41 @@
+{
+  "name": "suivi-candidatures",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Suivi des candidatures — Concentrix Bénin (migration progressive vers Vercel + Postgres)",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:pull": "drizzle-kit pull",
+    "db:setup": "node scripts/setup-db.mjs",
+    "db:export": "node scripts/backup-export.mjs",
+    "db:restore": "node scripts/backup-export.mjs restore",
+    "bootstrap:admin": "node scripts/bootstrap-admin.mjs",
+    "dev:local": "node scripts/dev-server.mjs",
+    "typecheck": "tsc --noEmit",
+    "validate": "node scripts/validate-schema.mjs",
+    "validate:step2": "node scripts/validate-step2.mjs",
+    "validate:step3": "node scripts/validate-step3.mjs",
+    "validate:step5": "node scripts/validate-step5.mjs",
+    "validate:step6": "node scripts/validate-step6.mjs",
+    "validate:step7": "node scripts/validate-step7.mjs"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "drizzle-orm": "^0.36.4",
+    "postgres": "^3.4.5",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.17.0",
+    "drizzle-kit": "^0.28.1",
+    "embedded-postgres": "^18.4.0-beta.17",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.6.3"
+  }
+}

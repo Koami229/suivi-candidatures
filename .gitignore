@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.vercel/
+*.log
+.DS_Store
+.validate-bundle/
+backups/
+data/
