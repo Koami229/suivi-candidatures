@@ -59,7 +59,7 @@ export const ETAPES = ['RH', 'M1', 'M2', 'M3'] as const;
 export const ROLES = ['rh', 'recruteur', 'manager'] as const;
 
 /** Compétences linguistiques. */
-export const LANGUES = ['Anglais', 'Espagnol', 'Arabe'] as const;
+export const LANGUES = ['Anglais', 'Espagnol', 'Arabe', 'Chinois', 'Allemand', 'Russe', 'Portugais'] as const;
 
 /** Compétences informatiques. */
 export const COMPETENCES_INFO = ['Pack Office', 'Excel avancé', 'Outil CRM', 'ERP'] as const;

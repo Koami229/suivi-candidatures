@@ -7,6 +7,9 @@ import {
   isStageUnlocked,
   infoIssues,
   sanitizeInfo,
+  isKnownProjet,
+  controleAffectation,
+  projetDejaTraite,
 } from '../../src/api/candidats';
 import { triggerEmail } from '../../src/api/email';
 import { sql } from '../../db/client';
@@ -26,7 +29,12 @@ const STAGE_LABELS: Record<string, string> = {
  *   - M2/M3 se débloquent uniquement si l'étape précédente = KO ou MB (jamais OK) ;
  *   - le recruteur ne saisit que l'entretien RH ; un manager uniquement SON tour
  *     sur le candidat qui lui est affecté (projet) ;
- *   - KO/MB d'un manager → retour au pré-vivier + effacement de l'affectation projet.
+ *   - KO/MB d'un manager → retour au pré-vivier + effacement de l'affectation projet ;
+ *   - v16 : affectation directe depuis l'entretien RH (stages.rh.projet,
+ *     appliquée si décision OK, contrôles anti-doublons) ; en cas de refus,
+ *     l'entretien est enregistré et la réponse porte `affectationErreur` ;
+ *   - v16 : enregistrement manager refusé (400) si le projet du tour a déjà
+ *     été traité sur un autre tour — l'affectation est alors effacée.
  * DELETE /api/candidats/:id — suppression (RH).
  */
 export default run(async (req: Request) => {
@@ -116,6 +124,7 @@ export default run(async (req: Request) => {
   const wantedStages: string[] = stagesIn ? Object.keys(stagesIn) : [];
   const myRound = currentManagerRound(c.stages);
   const planned: Record<string, any> = {};
+  let affectationErreur: string | null = null;
   for (const key of wantedStages) {
     if (!STAGE_LABELS[key]) return err('Étape inconnue.', 400);
     const cur = c.stages[key];
@@ -151,7 +160,43 @@ export default run(async (req: Request) => {
       date,
       commentaire,
       decision: DEC_JS_TO_DB[decision],
+      projet: '',
     };
+  }
+
+  // ----- Affectation directe depuis l'entretien RH (v16) -----------------
+  // « Affecter au projet / poste correspondant » (facultatif) : appliquée
+  // uniquement si la décision est OK — un candidat KO/MB n'est affecté à
+  // aucun projet. Les contrôles v16 s'appliquent (projet déjà traité,
+  // doublons). En cas de refus, l'entretien est enregistré sans affectation.
+  if (planned.rh) {
+    const projRh = String((stagesIn as any).rh.projet ?? '').trim();
+    if (projRh && !isKnownProjet(projRh)) return err('Projet inconnu.', 400);
+    if (projRh && planned.rh.decision === 'OK') {
+      const ctrl = controleAffectation(c, projRh, all);
+      if (ctrl.ok) planned.rh.projet = projRh;
+      else affectationErreur = ctrl.message;
+    }
+  }
+
+  // ----- Contrôle bloquant du manager (v16) ------------------------------
+  // Le tour enregistré doit être rattaché à un projet que le candidat n'a
+  // jamais reçu sur un autre tour Manager. Sinon rien n'est enregistré et
+  // l'affectation invalide est effacée (retour au pré-vivier).
+  if (role === 'manager') {
+    const myKey = currentManagerRound(c.stages);
+    if (myKey && Object.keys(planned).includes(myKey)) {
+      if (!c.projet || projetDejaTraite(c, c.projet, myKey)) {
+        const projetRefuse = c.projet;
+        if (projetRefuse) await sql`UPDATE candidats SET projet = '' WHERE id = ${id}`;
+        return err(
+          projetRefuse
+            ? `Enregistrement refusé : ce candidat a déjà effectué un entretien pour le projet « ${projetRefuse} ». Un candidat ne peut pas être affecté deux fois au même projet ; il retourne au Pré-vivier pour une nouvelle affectation.`
+            : "Enregistrement refusé : ce candidat n'est plus affecté à un projet.",
+          400
+        );
+      }
+    }
   }
 
   // ----- Écriture (transaction sur une connexion réservée du pool) ------
@@ -179,14 +224,19 @@ export default run(async (req: Request) => {
       const etape = key === 'rh' ? 'RH' : key.toUpperCase();
       // Le projet du tour est figé depuis le compte du manager (comme l'app).
       // Saisi « par procuration » par le RH, il reste vide — le candidat repasse
-      // alors par le pré-vivier en cas de KO/MB.
-      const roundProjet = key === 'rh' ? '' : role === 'manager' ? c.projet : '';
+      // alors par le pré-vivier en cas de KO/MB. L'entretien RH porte éventuel-
+      // lement l'affectation choisie par le recruteur (validée ci-dessus).
+      const roundProjet = key === 'rh' ? s.projet : role === 'manager' ? c.projet : '';
       await reserved`INSERT INTO entretiens (candidat_id, etape, note, date_entretien, commentaire,
           decision, acteur_nom, projet)
         VALUES (${id}, ${etape}, ${s.note}, ${s.date}, ${s.commentaire}, ${s.decision},
           ${sessionName}, ${roundProjet})
         ON CONFLICT (candidat_id, etape) DO NOTHING`;
       if (key !== 'rh' && (s.decision === 'KO' || s.decision === 'MB')) projectCleared = true;
+    }
+    if (planned.rh && planned.rh.projet) {
+      // Affectation directe depuis l'entretien RH (décision OK, contrôlée).
+      await reserved`UPDATE candidats SET projet = ${planned.rh.projet} WHERE id = ${id}`;
     }
     if (projectCleared) {
       // KO/MB manager → retour au pré-vivier, affectation projet effacée
@@ -215,6 +265,16 @@ export default run(async (req: Request) => {
   // renvoie la fiche fraîche pour que l'UI se resynchronise.
   const fresh = (await fetchAllCandidates()).find((x) => x.id === id);
 
+  // Garde-fou d'intégrité : si la correction (affectation vers un projet déjà
+  // traité annulée au chargement) ne s'est pas encore reflétée en base, la
+  // persister — cette fiche vient d'être modifiée.
+  if (fresh && !fresh.projet) {
+    const dbRow = await sql`SELECT projet FROM candidats WHERE id = ${id}`;
+    if (dbRow[0] && dbRow[0].projet) {
+      await sql`UPDATE candidats SET projet = '' WHERE id = ${id}`;
+    }
+  }
+
   // ----- Emails automatiques (étape 5) — APRÈS commit, ne bloquent jamais -
   // Déclencheurs (doc 01 §3.4) : passage à SELECTED (1er OK manager) et
   // entrée en pré-vivier (RH OK). Un seul envoi par TRANSITION — l'entretien
@@ -227,7 +287,13 @@ export default run(async (req: Request) => {
     }
   }
 
-  return json({ ok: true, candidat: fresh });
+  return json({
+    ok: true,
+    candidat: fresh,
+    // L'entretien RH est enregistré ; l'affectation demandée n'a pas pu
+    // l'être (contrôles v16) — le front affiche ce message (v16 : alert).
+    ...(affectationErreur ? { affectationErreur } : {}),
+  });
 });
 
 function emailErr(email: string, c: Record<string, any>): boolean {

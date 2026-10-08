@@ -1,5 +1,5 @@
 import { json, err, run, readJson, requireAuth, audit } from '../../../src/api/http';
-import { fetchAllCandidates, currentManagerRound, projetsDejaTraites, isKnownProjet, STAGE_LABELS } from '../../../src/api/candidats';
+import { fetchAllCandidates, currentManagerRound, controleAffectation, isKnownProjet, STAGE_LABELS } from '../../../src/api/candidats';
 import { triggerEmail } from '../../../src/api/email';
 import { sql } from '../../../db/client';
 
@@ -34,10 +34,10 @@ export default run(async (req: Request) => {
   const c = all.find((x) => x.id === id);
   if (!c) return err('Candidat introuvable.', 404);
 
-  const vus = projetsDejaTraites(c.stages);
-  if (vus.includes(projet)) {
-    return err(`Ce candidat a déjà effectué un entretien pour le projet « ${projet} ». L'affectation à ce même projet est interdite ; merci de choisir un autre projet.`, 400);
-  }
+  // Contrôles d'affectation v16 : projet déjà traité + doublons de la même
+  // personne (une seule affectation simultanée, jamais deux fois le même projet).
+  const ctrl = controleAffectation(c, projet, all);
+  if (!ctrl.ok) return err(ctrl.message, 400);
   if (currentManagerRound(c.stages) === null) {
     return err('Ce candidat n\'est pas en attente d\'un tour manager.', 400);
   }

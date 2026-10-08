@@ -42,3 +42,12 @@ export {
   __setEmailFetchForTests,
   __resetEmailFetchForTests,
 } from '../src/api/email';
+export {
+  SEUIL_SHL,
+  NIVEAUX,
+  PROJETS,
+  DEPARTEMENTS,
+  LANGUES,
+  COMPETENCES_INFO,
+  EXPERIENCES_CONCURRENTS,
+} from '../src/lib/constants';

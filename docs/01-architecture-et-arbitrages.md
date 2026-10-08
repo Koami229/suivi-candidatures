@@ -557,3 +557,45 @@ vertes — `validate` 30/30, `validate:step2` 47/47, `validate:step3` 86/86,
 100 % servie par l'API (Postgres), aucune donnée sensible n'est dans le
 navigateur, et chaque étape est re-productible (scripts de migration du front +
 suites de validation).
+
+## 14. Mise à jour v16 — Étape 8 livrée : règles métier
+
+La version 16 de l'app d'origine (fichier unique) a été intégrée à la
+migration. Étape 8 : les **règles métier** de la v16, portées côté serveur.
+
+### Changements
+- **Langues : 7 options** (Anglais, Espagnol, Arabe, Chinois, Allemand,
+  Russe, Portugais) — `src/lib/constants.ts` + front.
+- **Affectation — contrôles anti-doublons** (nouveau, `src/api/candidats.ts`) :
+  - `cleIdentite` / `fichesDoublons` : même personne = même email **ou** même
+    nom+prénom (comparaison tolérante `normProjet`) ;
+  - une même personne n'est affectée qu'à **un seul projet** à la fois ;
+  - jamais re-affectée à un projet **déjà traité** (tous tours confondus) ;
+  - appliqués sur `POST /api/previvier/:id/affecter` **et** sur l'affectation
+    directe depuis l'entretien RH.
+- **Affectation directe depuis l'entretien RH** : le champ « Affecter au
+  projet / poste correspondant » (facultatif) est appliqué **uniquement si la
+  décision est OK**. En cas de refus (contrôles), l'entretien est enregistré
+  et la réponse porte `affectationErreur` (alerte au front, non bloquant).
+  KO → champ vidé et verrouillé côté UI.
+- **Contrôle bloquant du manager** : enregistrement refusé (400) si le projet
+  du tour a déjà été traité sur un autre tour — l'affectation est effacée
+  (retour au pré-vivier). En pratique, le 403 « non affecté » précède ce cas
+  grâce au garde-fou ci-dessous ; le contrôle reste en double sécurité.
+- **Visibilité manager** : un candidat **déjà reçu** sur le projet du manager
+  disparaît de sa liste (`visibleForRole` + `projetDejaTraite`).
+- **Garde-fou d'intégrité** (`garantirAffectationUnique`) : toute affectation
+  pointant vers un projet déjà traité (données legacy/importées) est annulée
+  au chargement, puis **persistée** à la prochaine modification réussie de la
+  fiche. **Nuance assumée par rapport à la v16** : le projet d'un candidat
+  déjà **SÉLECTIONNÉ** (OK sur ce projet) n'est PAS effacé — dans la v16,
+  l'implémentation brute du garde-fou avait cet effet de bord (l'affectation
+  y est le résultat du parcours, pas une convocation en attente).
+- **Historique des entretiens** (front, existant) : l'affectation RH n'est
+  plus rappelée dans l'historique de l'étape RH (fix v16).
+
+**Validation** : `npm run validate:step8` — 59 tests, 0 échec (langues,
+affectation RH OK/KO/doublons, pré-vivier renforcé, refus manager, visibilité,
+garde-fou + persistance, SELECTED conserve son projet, audit du front).
+Régressions : toutes les suites vertes (30/30 · 47/47 · 86/86 · 47/47 ·
+30/30 · 50/50) + typecheck.

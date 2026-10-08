@@ -622,14 +622,14 @@
   var NIVEAU_OPTS = ["BEPC","BAC","LICENCE","MASTER","THESE"];
   var PROJET_OPTS = ["Samsung","Amazon","Emma","Lydia","Carrefour","Colis Privé","Devialet","Bouygues Telecom","La Poste courrier","La Poste colissimo","Comutitres","Effy","Catalina","Tiime","My Afro","Orange","BUT","HTG"];
   var EXPERIENCE_OPTS = ["VIPP Interstis","AdKontact Bénin","CallConnect Bénin","SIONTEL","Palladium Africa","CRM Consulting","Groupe Ageka Bénin","Digit's Solutions","Groupe Media Contact","Glow Contact Center Benin","Africa Call Center","Call Center Services Bénin","Bénin Call Center","Global Contact Center","E-Call Bénin","Africa Contact Center","Outsourcing Bénin","Contact Center Solutions Bénin"];
-  var LANGUES_OPTS = ["Anglais","Espagnol","Arabe"];
+  var LANGUES_OPTS = ["Anglais","Espagnol","Arabe","Chinois","Allemand","Russe","Portugais"];
   var INFO_OPTS = ["Pack Office","Excel avancé","Outil CRM","ERP"];
 
   // Autocomplétion d'adresse Geoapify : déplacée côté serveur (proxy API, clé en
   // variable d'environnement) — sera restaurée à l'étape suivante.
 
   var STAGES = [
-    {key:"rh", label:"Entretien RH", hasRecruteur:true, hasProjet:false, hasDate:true, hasNote:false, hasNomManager:false},
+    {key:"rh", label:"Entretien RH", hasRecruteur:true, hasProjet:false, hasAffectation:true, hasDate:true, hasNote:false, hasNomManager:false},
     {key:"m1", label:"Entretien Manager 1", hasRecruteur:false, hasProjet:false, hasDate:true, hasNote:false, hasNomManager:true},
     {key:"m2", label:"Entretien Manager 2", hasRecruteur:false, hasProjet:false, hasDate:true, hasNote:false, hasNomManager:true},
     {key:"m3", label:"Entretien Manager 3", hasRecruteur:false, hasProjet:false, hasDate:true, hasNote:false, hasNomManager:true}
@@ -1721,6 +1721,23 @@
     return box;
   }
 
+  // Projets déjà traités par le candidat (tous tours confondus) — reprise de
+  // l'app v16, avec comparaison tolérante (espaces, casse) côté affichage.
+  // La règle est aussi appliquée côté serveur (contrôle d'affectation).
+  function projetsDejaTraitesFront(c){
+    var vus = [];
+    ["m1","m2","m3"].forEach(function(k){
+      var d = c.stages[k];
+      if(d && d.decision !== "a_faire" && d.projet && vus.indexOf(d.projet) === -1) vus.push(d.projet);
+    });
+    return vus;
+  }
+  function projetDejaTraiteFront(c, p){
+    var n = String(p || "").replace(/\s+/g, " ").trim().toLowerCase();
+    if(!n) return false;
+    return projetsDejaTraitesFront(c).some(function(x){ return String(x || "").replace(/\s+/g, " ").trim().toLowerCase() === n; });
+  }
+
   function renderStageSection(c, stage, reachable, showLockContext){
     var data = c.stages[stage.key];
     var completed = data.decision !== "a_faire";
@@ -1765,14 +1782,43 @@
     html +=
       '<div class="field-s"><label>Commentaire <span class="req">*</span></label>' +
         '<textarea data-stage="' + stage.key + '" data-field="commentaire" data-required="1" placeholder="Observations de l\'entretien…"' + disAttr + '>' + escapeHtml(data.commentaire) + '</textarea></div>' +
-      '<div class="field-s" style="margin-bottom:0;"><label>Décision <span class="req">*</span></label>' +
+      '<div class="field-s"' + (stage.hasAffectation ? '' : ' style="margin-bottom:0;"') + '><label>Décision <span class="req">*</span></label>' +
         '<select data-stage="' + stage.key + '" data-field="decision" data-required="1"' + disAttr + '>' +
           '<option value="a_faire"' + (data.decision === "a_faire" ? " selected" : "") + '>À réaliser</option>' +
           '<option value="ok"' + (data.decision === "ok" ? " selected" : "") + '>OK</option>' +
           '<option value="ko"' + (data.decision === "ko" ? " selected" : "") + '>KO</option>' +
           '<option value="mb"' + (data.decision === "mb" ? " selected" : "") + '>MB</option>' +
         '</select></div>';
+    if(stage.hasAffectation){
+      // Poste auquel le recruteur estime que le candidat correspond (facultatif).
+      // Appliqué uniquement si la décision est OK (contrôles côté serveur).
+      var affVal = completed ? (data.projet || "") : (data.projet || c.projet || "");
+      html += '<div class="field-s" style="margin-top:10px;margin-bottom:0;"><label>Affecter au projet / poste correspondant</label>' +
+        '<select data-stage="' + stage.key + '" data-field="projet"' + disAttr + '>' +
+        '<option value="">— Aucun (à affecter plus tard depuis le Pré-vivier) —</option>' +
+        PROJET_OPTS.map(function(p){
+          var used = projetDejaTraiteFront(c, p);
+          return '<option value="' + escapeHtml(p) + '"' + (affVal === p ? " selected" : "") + (used ? " disabled" : "") + '>' + escapeHtml(p) + (used ? " (déjà reçu en entretien)" : "") + '</option>';
+        }).join("") +
+      '</select></div>';
+    }
     sec.innerHTML = html;
+    // Entretien RH KO : le champ « Affecter au projet / poste correspondant »
+    // est vidé et désactivé (un candidat KO/MB n'est affecté à aucun projet).
+    function syncAffectationWithDecision(){
+      var dec = sec.querySelector('select[data-field="decision"]');
+      var aff = sec.querySelector('select[data-field="projet"]:not([data-required])');
+      if(!dec || !aff || dec.disabled) return;
+      var ko = dec.value === "ko";
+      if(ko) aff.value = "";
+      aff.disabled = ko;
+    }
+    if(stage.hasAffectation){
+      sec.querySelectorAll('select[data-field="decision"]').forEach(function(sel){
+        sel.addEventListener("change", function(){ syncAffectationWithDecision(); });
+      });
+      syncAffectationWithDecision();
+    }
     return sec;
   }
 
@@ -1794,7 +1840,8 @@
       var rows = [];
       if(person) rows.push([s.hasNomManager ? "Manager" : "Recruteur", person]);
       if(s.hasDate && d.date) rows.push(["Date", d.date]);
-      if(d.projet) rows.push(["Projet", d.projet]);
+      // L'affectation décidée à l'entretien RH n'est pas rappelée dans l'historique de cette étape.
+      if(d.projet && !s.hasAffectation) rows.push(["Projet", d.projet]);
       if(s.hasNote && d.note) rows.push(["Note / résultat", d.note]);
 
       return '<div class="history-item">' +
@@ -2147,6 +2194,7 @@
       if(payload.stages[k].decision === "a_faire") delete payload.stages[k];
     });
 
+    var affectationRhErreur = null;
     try{
       var res = await apiFetch("/api/candidats/" + activeId, {
         method: "PUT",
@@ -2160,6 +2208,10 @@
         }
         throw new Error(d.message || "Enregistrement impossible.");
       }
+      // v16 : l'entretien RH est enregistré mais l'affectation demandée a été
+      // refusée (projet déjà traité / doublons) — avertissement, pas de blocage.
+      var saved = await res.json().catch(function(){ return null; });
+      if(saved && saved.affectationErreur) affectationRhErreur = saved.affectationErreur;
     }catch(err){
       alert(err.message || "Enregistrement impossible.");
       return;
@@ -2167,6 +2219,9 @@
     render();
     if(currentView === "previvier") renderPrevivier();
     closeModal();
+    if(affectationRhErreur){
+      alert("L'entretien RH a bien été enregistré, mais l'affectation n'a pas pu être appliquée :\n" + affectationRhErreur + "\nVous pouvez affecter le candidat depuis le Pré-vivier.");
+    }
   });
 
   // ---------- STATISTIQUES ----------

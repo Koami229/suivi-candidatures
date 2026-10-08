@@ -42,7 +42,11 @@ export async function fetchAllCandidates(): Promise<Record<string, any>[]> {
   for (const e of eRows) {
     (byCandidate[e.candidat_id] = byCandidate[e.candidat_id] || []).push(e);
   }
-  return cRows.map((c: any) => serializeCandidate(c, byCandidate[c.id] || []));
+  const list = cRows.map((c: any) => serializeCandidate(c, byCandidate[c.id] || []));
+  // Garde-fou d'intégrité (v16, repris de loadCandidates()) : annule toute
+  // affectation pointant vers un projet déjà traité par le candidat.
+  for (const c of list) garantirAffectationUnique(c);
+  return list;
 }
 
 function serializeCandidate(c: any, eRows: any[]): Record<string, any> {
@@ -122,14 +126,118 @@ export function currentManagerRound(stages: Record<string, any>): 'm1' | 'm2' | 
   return null;
 }
 
-/** Reprise de projetsDejaTraites(). */
-export function projetsDejaTraites(stages: Record<string, any>): string[] {
+/**
+ * Reprise de projetsDejaTraites(c, exceptKey) — projets pour lesquels le
+ * candidat a déjà effectué un entretien Manager (quel que soit le tour) :
+ * un même projet ne peut plus lui être affecté une seconde fois.
+ * exceptKey (facultatif) : tour à ignorer (ex. le tour en cours d'enregistrement).
+ */
+export function projetsDejaTraites(stages: Record<string, any>, exceptKey?: string): string[] {
   const vus: string[] = [];
   for (const k of ['m1', 'm2', 'm3']) {
+    if (k === exceptKey) continue;
     const d = stages[k];
     if (d.decision !== 'a_faire' && d.projet && !vus.includes(d.projet)) vus.push(d.projet);
   }
   return vus;
+}
+
+// ---------------------------------------------------------------------
+// Règles d'affectation v16 — comparaisons tolérantes et contrôle des
+// doublons (reprises à l'identique de l'app, portées côté serveur).
+// ---------------------------------------------------------------------
+
+/** Comparaison tolérante (espaces, casse) pour qu'aucune variante d'écriture ne contourne la règle. */
+export function normProjet(p: any): string {
+  return String(p ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+/** Le projet a-t-il déjà été traité par le candidat (tous tours confondus, sauf exceptKey) ? */
+export function projetDejaTraite(c: Record<string, any>, projet: string, exceptKey?: string): boolean {
+  const n = normProjet(projet);
+  if (!n) return false;
+  return projetsDejaTraites(c.stages, exceptKey).some((p) => normProjet(p) === n);
+}
+
+/** Identité d'un candidat, tous enregistrements confondus : e-mail, sinon nom + prénom. */
+export function cleIdentite(c: Record<string, any>): string {
+  const em = String(c.email || '').trim().toLowerCase();
+  if (em) return 'e:' + em;
+  return 'n:' + normProjet((c.nom || '') + ' ' + (c.prenom || ''));
+}
+
+/** Autres fiches correspondant à la même personne (doublons éventuels). */
+export function fichesDoublons(c: Record<string, any>, all: Record<string, any>[]): Record<string, any>[] {
+  const k = cleIdentite(c);
+  const nn = 'n:' + normProjet((c.nom || '') + ' ' + (c.prenom || ''));
+  return all.filter(
+    (o) =>
+      o !== c &&
+      o.id !== c.id &&
+      (cleIdentite(o) === k || 'n:' + normProjet((o.nom || '') + ' ' + (o.prenom || '')) === nn)
+  );
+}
+
+/**
+ * Contrôles d'affectation SANS effet de bord (aucune modification du candidat).
+ * Renvoie { ok: true } ou { ok: false, message }.
+ */
+export function controleAffectation(
+  c: Record<string, any>,
+  projet: string,
+  all: Record<string, any>[]
+): { ok: true } | { ok: false; message: string } {
+  if (!projet) return { ok: false, message: "Merci de choisir un projet avant d'affecter le candidat." };
+  // Déjà reçu sur ce projet (tous tours confondus).
+  if (projetDejaTraite(c, projet)) {
+    return {
+      ok: false,
+      message: `Ce candidat a déjà effectué un entretien pour le projet « ${projet} ». L'affectation à ce même projet est interdite ; merci de choisir un autre projet.`,
+    };
+  }
+  // Doublon de la même personne déjà affecté ailleurs ou déjà reçu sur ce projet.
+  for (const o of fichesDoublons(c, all)) {
+    if (o.projet && normProjet(o.projet) !== normProjet(projet)) {
+      return {
+        ok: false,
+        message: `Ce candidat existe en double et est déjà affecté au projet « ${o.projet} ». Un candidat ne peut pas être affecté simultanément à plusieurs projets.`,
+      };
+    }
+    if (projetDejaTraite(o, projet)) {
+      return {
+        ok: false,
+        message: `Ce candidat (fiche en double) a déjà effectué un entretien pour le projet « ${projet} ». Merci de choisir un autre projet.`,
+      };
+    }
+  }
+  return { ok: true };
+}
+
+/**
+ * Garde-fou d'intégrité : un candidat ne peut JAMAIS être affecté à un projet
+ * pour lequel il a déjà passé un entretien Manager (tous tours confondus). Si une
+ * affectation invalide est détectée (données anciennes, importées ou modifiées
+ * hors interface), elle est annulée : le candidat retourne au pré-vivier en
+ * attente d'une nouvelle affectation. Renvoie true si corrigé.
+ *
+ * Nuance par rapport à l'app v16 (où le garde-fou effaçait aussi le projet d'un
+ * candidat déjà SÉLECTIONNÉ — effet de bord indésirable) : l'affectation est
+ * légitime si le candidat a obtenu un OK sur ce projet, car c'est alors le
+ * RÉSULTAT du parcours et non une convocation en attente.
+ */
+export function garantirAffectationUnique(c: Record<string, any>): boolean {
+  if (!c.projet) return false;
+  const n = normProjet(c.projet);
+  if (!n) return false;
+  const selectionOk = ['m1', 'm2', 'm3'].some(
+    (k) => c.stages[k].decision === 'ok' && normProjet(c.stages[k].projet) === n
+  );
+  if (selectionOk) return false;
+  if (projetDejaTraite(c, c.projet)) {
+    c.projet = '';
+    return true;
+  }
+  return false;
 }
 
 /** Reprise de passesThreshold(). */
@@ -137,13 +245,18 @@ export function passesThreshold(moyenne: number): boolean {
   return moyenne >= SEUIL_SHL;
 }
 
-/** Reprise de visibleForRole(). */
+/**
+ * Reprise de visibleForRole() (v16) : un manager ne voit que les candidats de
+ * SON projet, à son tour, et JAMAIS un candidat déjà reçu sur ce projet
+ * (règle « jamais deux fois le même projet »).
+ */
 export function visibleForRole(c: Record<string, any>, role: string, managerProjet: string | null): boolean {
   if (!passesThreshold(c.moyenne)) return false;
   if (role === 'rh') return true;
   if (role === 'recruteur') return c.stages.rh.decision === 'a_faire';
   if (role === 'manager') {
     if (!managerProjet || c.projet !== managerProjet) return false;
+    if (projetDejaTraite(c, managerProjet)) return false; // jamais deux fois le même projet
     return currentManagerRound(c.stages) !== null;
   }
   return false;
