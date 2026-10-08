@@ -23,7 +23,8 @@
     "validate:step5": "node scripts/validate-step5.mjs",
     "validate:step6": "node scripts/validate-step6.mjs",
     "validate:step7": "node scripts/validate-step7.mjs",
-    "validate:step8": "node scripts/validate-step8.mjs"
+    "validate:step8": "node scripts/validate-step8.mjs",
+    "validate:step9": "node scripts/validate-step9.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

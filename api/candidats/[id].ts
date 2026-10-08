@@ -11,7 +11,8 @@ import {
   controleAffectation,
   projetDejaTraite,
 } from '../../src/api/candidats';
-import { triggerEmail } from '../../src/api/email';
+import { triggerEmail, renderTriggerEmail, STAGE_EMAIL_LABELS } from '../../src/api/email';
+import { triggerWhatsApp } from '../../src/api/whatsapp';
 import { sql } from '../../db/client';
 
 const DEC_JS_TO_DB: Record<string, string> = { ok: 'OK', ko: 'KO', mb: 'MB' };
@@ -275,15 +276,18 @@ export default run(async (req: Request) => {
     }
   }
 
-  // ----- Emails automatiques (étape 5) — APRÈS commit, ne bloquent jamais -
-  // Déclencheurs (doc 01 §3.4) : passage à SELECTED (1er OK manager) et
-  // entrée en pré-vivier (RH OK). Un seul envoi par TRANSITION — l'entretien
-  // étant verrouillé une fois saisi, ces transitions sont irréversibles.
-  if (fresh && fresh.statut !== c.statut) {
-    if (fresh.statut === 'SELECTED') {
-      await triggerEmail({ code: 'SELECTED', candidat: fresh, projet: fresh.projet });
-    } else if (fresh.statut === 'PREVIVER') {
-      await triggerEmail({ code: 'PREVIVER', candidat: fresh });
+  // ----- Emails + WhatsApp automatiques (v16) — APRÈS commit, ne bloquent
+  // jamais. Un email PAR DÉCISION (jamais pour MB) : RH OK/KO, M1/M2 KO
+  // (invitation au tour suivant), M3 KO (fin), M1/M2/M3 OK (félicitations).
+  if (fresh) {
+    for (const key of Object.keys(planned)) {
+      const dec = planned[key].decision; // 'OK' | 'KO' | 'MB'
+      const code = dec === 'OK' ? (key === 'rh' ? 'RH_OK' : 'M_OK') : dec === 'KO' ? (key === 'rh' ? 'RH_KO' : `${key.toUpperCase()}_KO`) : null;
+      if (!code) continue;
+      await triggerEmail({ code, candidat: fresh, projet: fresh.projet, etape: STAGE_EMAIL_LABELS[key], date: planned[key].date });
+      // WhatsApp (si configuré) : même texte que l'email (reprise v16).
+      const rendered = await renderTriggerEmail(code, fresh, { projet: fresh.projet, etape: STAGE_EMAIL_LABELS[key], date: planned[key].date });
+      if (rendered) await triggerWhatsApp({ candidat: fresh, text: rendered.body });
     }
   }
 

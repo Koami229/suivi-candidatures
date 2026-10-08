@@ -48,6 +48,9 @@ export default run(async (req: Request) => {
     const anonym = await reserved`UPDATE envois_email SET candidat_id = NULL, destinataire = '[purge RGPD]'
       WHERE candidat_id = ${id} RETURNING id`;
     nEnvois = anonym.length;
+    // Journal WhatsApp (étape 9) : mêmes règles d'anonymisation.
+    await reserved`UPDATE envois_whatsapp SET candidat_id = NULL, destinataire = '[purge RGPD]'
+      WHERE candidat_id = ${id}`;
     const del = await reserved`DELETE FROM candidats WHERE id = ${id} RETURNING id`;
     if (del.length === 0) {
       await reserved.unsafe('rollback');

@@ -114,6 +114,7 @@ const ROUTES = {
   '/api/auth/twofa-status': { get: api.twofaStatus },
   '/api/auth/twofa-regenerate': { post: api.twofaRegenerate },
   '/api/auth/twofa-confirm': { post: api.twofaConfirm },
+  '/api/auth/forgot': { post: api.forgot },
   '/api/comptes': { get: api.comptesIndex, post: api.comptesIndex },
   '/api/previvier': { get: api.previvierIndex },
   '/api/candidats': { get: api.candidatsIndex, post: api.candidatsIndex },
@@ -123,6 +124,8 @@ const ROUTES = {
   '/api/parametres/email': { get: api.parametresEmail, put: api.parametresEmail },
   '/api/parametres/email/test': { post: api.parametresEmailTest },
   '/api/parametres/email/envois': { get: api.parametresEmailEnvois },
+  '/api/parametres/whatsapp': { get: api.parametresWhatsapp, put: api.parametresWhatsapp },
+  '/api/parametres/whatsapp/envois': { get: api.parametresWhatsappEnvois },
   '/api/geo/search': { get: api.geoSearch },
   '/api/audit': { get: api.auditIndex },
 };

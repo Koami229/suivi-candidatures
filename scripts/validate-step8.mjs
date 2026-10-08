@@ -68,6 +68,7 @@ await ep.createDatabase('suivi');
 const db = postgres(`postgres://test:test@127.0.0.1:${PORT}/suivi`, { max: 1 });
 await db.unsafe(fs.readFileSync(path.join(projectRoot, 'migrations', '0001_init.sql'), 'utf8'));
 await db.unsafe(fs.readFileSync(path.join(projectRoot, 'migrations', '0002_email_templates.sql'), 'utf8'));
+await db.unsafe(fs.readFileSync(path.join(projectRoot, 'migrations', '0003_notification_v16.sql'), 'utf8'));
 check('migrations 0001 + 0002 appliquées', true);
 
 // ---------- 3. Environnement + comptes ----------

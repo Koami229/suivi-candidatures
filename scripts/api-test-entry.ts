@@ -29,6 +29,9 @@ export { default as pv } from '../api/pv';
 export { default as parametresEmail } from '../api/parametres/email/index';
 export { default as parametresEmailTest } from '../api/parametres/email/test';
 export { default as parametresEmailEnvois } from '../api/parametres/email/envois';
+export { default as parametresWhatsapp } from '../api/parametres/whatsapp/index';
+export { default as parametresWhatsappEnvois } from '../api/parametres/whatsapp/envois';
+export { default as forgot } from '../api/auth/forgot';
 export { default as geoSearch } from '../api/geo/search';
 export { __setGeoFetchForTests, __resetGeoFetchForTests } from '../api/geo/search';
 export { default as auditIndex } from '../api/audit/index';
@@ -36,12 +39,21 @@ export { default as candidatsPurge } from '../api/candidats/[id]/purger';
 export { totpCodeAt, newTotpSecret } from '../src/api/totp';
 export {
   triggerEmail,
+  renderTriggerEmail,
+  formatDateFr,
+  sendActivationEmail,
   renderTemplate,
   encryptApiKey,
   decryptApiKey,
   __setEmailFetchForTests,
   __resetEmailFetchForTests,
 } from '../src/api/email';
+export {
+  triggerWhatsApp,
+  formatWhatsAppNumber,
+  __setWhatsAppFetchForTests,
+  __resetWhatsAppFetchForTests,
+} from '../src/api/whatsapp';
 export {
   SEUIL_SHL,
   NIVEAUX,

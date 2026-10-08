@@ -1,6 +1,5 @@
 import { json, err, run, readJson, requireAuth, audit } from '../../../src/api/http';
-import { fetchAllCandidates, currentManagerRound, controleAffectation, isKnownProjet, STAGE_LABELS } from '../../../src/api/candidats';
-import { triggerEmail } from '../../../src/api/email';
+import { fetchAllCandidates, currentManagerRound, controleAffectation, isKnownProjet } from '../../../src/api/candidats';
 import { sql } from '../../../db/client';
 
 /**
@@ -45,14 +44,7 @@ export default run(async (req: Request) => {
   await sql`UPDATE candidats SET projet = ${projet} WHERE id = ${id}`;
   await audit(auth.username, 'candidat.affecte', 'candidat', id, { projet });
 
-  // Email automatique (étape 5) : « entretien manager à venir » — le
-  // déclencheur AFFECTATION_PROJET (doc 01 §3.4). Après commit, ne bloque
-  // jamais le flux.
-  const fresh = (await fetchAllCandidates()).find((x) => x.id === id);
-  if (fresh) {
-    const round = currentManagerRound(fresh.stages);
-    await triggerEmail({ code: 'AFFECTATION_PROJET', candidat: fresh, projet, etape: round ? STAGE_LABELS[round] : '' });
-  }
-
+  // Politique v16 : aucun email à l'affectation — l'email part à la
+  // DÉCISION (OK/KO) enregistrée par le manager.
   return json({ ok: true, projet });
 });

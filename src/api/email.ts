@@ -20,7 +20,34 @@ import { requireEnv } from '../lib/config';
  */
 
 export const EMAIL_PROVIDERS = ['resend', 'brevo', 'sendgrid'] as const;
-export const TEMPLATE_CODES = ['SELECTED', 'PREVIVER', 'AFFECTATION_PROJET'] as const;
+/**
+ * Codes de templates (v16) : un email PAR DÉCISION (jamais pour MB) +
+ * activation de compte (accès interne). Les anciens codes
+ * SELECTED / PREVIVER / AFFECTATION_PROJET (étape 5) sont remplacés.
+ */
+export const TEMPLATE_CODES = ['RH_OK', 'RH_KO', 'M1_KO', 'M2_KO', 'M3_KO', 'M_OK', 'ACTIVATION'] as const;
+
+/** Libellé d'étape pour les emails (reprise de STAGE_EMAIL_LABELS, v16). */
+export const STAGE_EMAIL_LABELS: Record<string, string> = {
+  rh: 'entretien RH',
+  m1: 'premier entretien Manager',
+  m2: 'deuxième entretien Manager',
+  m3: 'troisième entretien Manager',
+};
+
+/** Date « 2026-10-08 » → « 8/10/2026 » (reprise de formatInterviewDateFr, v16). */
+export function formatDateFr(dateStr: string): string {
+  // Reprise de formatInterviewDateFr() (v16) : date ISO → JJ/MM/AAAA
+  // (zéros conservés, « 28/09/2026 »), '' si la date est absente ou invalide.
+  const s = String(dateStr || '').slice(0, 10);
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (!m) return '';
+  const a = parseInt(m[1], 10);
+  const mois = parseInt(m[2], 10);
+  const j = parseInt(m[3], 10);
+  if (!a || mois < 1 || mois > 12 || !j) return '';
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
 
 // ---------------------------------------------------------------------
 // Chiffrement de la clé API (AES-256-GCM) — clé venue de l'env uniquement.
@@ -174,6 +201,7 @@ export async function triggerEmail(args: {
   projet?: string;
   etape?: string;
   date?: string;
+  lien?: string;
 }): Promise<EmailTriggerResult> {
   const { code, candidat } = args;
   const to = String(candidat.email || '').trim();
@@ -200,25 +228,81 @@ export async function triggerEmail(args: {
   if (!cfg.api_key) return log('ignore', 'Clé API non configurée (Paramètres > Email).');
   if (!cfg.sender_email) return log('ignore', "Expéditeur non configuré (Paramètres > Email).");
 
-  const tplRows = await sql`SELECT * FROM templates_email WHERE code = ${code}`;
-  const tpl = tplRows[0] as Record<string, any> | undefined;
-  if (!tpl) return log('ignore', `Template « ${code} » introuvable.`);
-
-  const vars: Record<string, string> = {
-    prenom: String(candidat.prenom || ''),
-    candidat: String(candidat.nom || ''),
-    projet: String(args.projet || ''),
-    etape: String(args.etape || ''),
-    date: String(args.date || ''),
-    score: String(candidat.moyenne ?? ''),
-  };
-  const subject = renderTemplate(tpl.objet, vars);
-  const body = renderTemplate(tpl.corps, vars);
+  const rendered = await renderTriggerEmail(code, candidat, args);
+  if (!rendered) return log('ignore', `Template « ${code} » introuvable.`);
 
   try {
-    await sendEmail(cfg, to, subject, body);
+    await sendEmail(cfg, to, rendered.subject, rendered.body);
     return await log('envoye', '', cfg.fournisseur);
   } catch (e) {
     return await log('echec', e instanceof Error ? e.message : 'Erreur inconnue', cfg.fournisseur);
+  }
+}
+
+/**
+ * Rend le template d'un déclencheur avec les variables standard
+ * (prenom, candidat, nom_complet, projet, etape, date (format français),
+ * score, lien). Utilisé par triggerEmail et par le déclencheur WhatsApp
+ * (même texte que l'email — reprise de la v16).
+ */
+export async function renderTriggerEmail(
+  code: string,
+  candidat: Record<string, any>,
+  args: { projet?: string; etape?: string; date?: string; lien?: string } = {}
+): Promise<{ subject: string; body: string } | null> {
+  const tplRows = await sql`SELECT * FROM templates_email WHERE code = ${code}`;
+  const tpl = tplRows[0] as Record<string, any> | undefined;
+  if (!tpl) return null;
+  const vars: Record<string, string> = {
+    prenom: String(candidat.prenom || ''),
+    candidat: String(candidat.nom || ''),
+    nom_complet: `${String(candidat.prenom || '')} ${String(candidat.nom || '')}`.trim(),
+    projet: String(args.projet || ''),
+    etape: String(args.etape || ''),
+    date: formatDateFr(String(args.date || '')),
+    score: String(candidat.moyenne ?? ''),
+    lien: String(args.lien || ''),
+  };
+  return { subject: renderTemplate(tpl.objet, vars), body: renderTemplate(tpl.corps, vars) };
+}
+
+/**
+ * Email d'activation d'un ACCÈS INTERNE (compte manager/recruteur/admin) :
+ * template ACTIVATION avec le lien de définition du mot de passe.
+ * Journalisé dans `envois_email` (candidat_id NULL — pas un candidat).
+ * Ne lève jamais.
+ */
+export async function sendActivationEmail(
+  acc: { email: string; prenom: string; nom: string },
+  lien: string
+): Promise<EmailTriggerResult> {
+  const to = String(acc.email || '').trim();
+  try {
+    if (!to) return { statut: 'ignore', detail: 'Compte sans email.' };
+    const cfg = await loadEmailConfig();
+    if (!cfg.actif) return { statut: 'ignore', detail: 'Envoi automatique désactivé (Paramètres > Email).' };
+    if (!cfg.api_key) return { statut: 'ignore', detail: 'Clé API non configurée (Paramètres > Email).' };
+    if (!cfg.sender_email) return { statut: 'ignore', detail: 'Expéditeur non configuré (Paramètres > Email).' };
+    const rows = await sql`SELECT * FROM templates_email WHERE code = 'ACTIVATION'`;
+    const tpl = rows[0] as Record<string, any> | undefined;
+    if (!tpl) return { statut: 'ignore', detail: 'Template « ACTIVATION » introuvable.' };
+    const vars: Record<string, string> = {
+      prenom: String(acc.prenom || ''),
+      candidat: String(acc.nom || ''),
+      nom_complet: `${String(acc.prenom || '')} ${String(acc.nom || '')}`.trim(),
+      lien,
+    };
+    await sendEmail(cfg, to, renderTemplate(tpl.objet, vars), renderTemplate(tpl.corps, vars));
+    await sql`INSERT INTO envois_email (candidat_id, code, destinataire, fournisseur, statut, detail)
+      VALUES (NULL, 'ACTIVATION', ${to}, ${cfg.fournisseur}, 'envoye', NULL)`;
+    return { statut: 'envoye', detail: '' };
+  } catch (e) {
+    try {
+      await sql`INSERT INTO envois_email (candidat_id, code, destinataire, fournisseur, statut, detail)
+        VALUES (NULL, 'ACTIVATION', ${to || ''}, NULL, 'echec', ${e instanceof Error ? e.message : 'Erreur inconnue'})`;
+    } catch {
+      // journal impossible — le flux n'est en tout cas pas bloqué
+    }
+    return { statut: 'echec', detail: e instanceof Error ? e.message : 'Erreur inconnue' };
   }
 }

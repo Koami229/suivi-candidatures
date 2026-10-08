@@ -398,6 +398,12 @@ Régressions : `validate:step2` toujours 47/47, `validate` toujours 30/30,
 
 ## 11. Étape 5 livrée — Emails automatiques (Paramètres > Email)
 
+> **Mise à jour (étape 9 / v16)** : la *configuration* (fournisseur, clé
+> chiffrée, expéditeur, templates personnalisables, email de test, journal)
+> décrite ci-dessous est conservée. En revanche, les **déclencheurs**
+> d'origine (PRÉ-VIVIER, AFFECTATION_PROJET, SELECTED) ont été **remplacés**
+> par les **emails par décision** de la v16 — voir §15.1.
+
 ### 11.1 Architecture
 
 | Élément | Choix |
@@ -599,3 +605,88 @@ affectation RH OK/KO/doublons, pré-vivier renforcé, refus manager, visibilité
 garde-fou + persistance, SELECTED conserve son projet, audit du front).
 Régressions : toutes les suites vertes (30/30 · 47/47 · 86/86 · 47/47 ·
 30/30 · 50/50) + typecheck.
+
+## 15. Mise à jour v16 — Étape 9 livrée : notifications (emails par décision, WhatsApp, mot de passe oublié, QR TOTP)
+
+### 15.1 Emails par décision (politique v16 — remplace l'étape 5)
+
+La v16 n'envoie plus d'email à l'entrée en pré-vivier, à l'affectation ni au
+passage en SELECTED. Elle envoie **un email par DÉCISION enregistrée** :
+
+| Décision | Code template | Objet par défaut |
+|---|---|---|
+| RH OK | `RH_OK` | Bonne nouvelle suite à votre entretien RH |
+| RH KO | `RH_KO` | Suite donnée à votre candidature |
+| M1 KO | `M1_KO` | Suite à votre premier entretien Manager |
+| M2 KO | `M2_KO` | Suite à votre deuxième entretien Manager |
+| M3 KO | `M3_KO` | Suite donnée à votre candidature |
+| M1/M2/M3 OK | `M_OK` | Félicitations suite à votre entretien Manager |
+| MB | — | **aucun** email |
+
+- Migration `0003_notification_v16.sql` : supprime `PREVIVER` /
+  `AFFECTATION_PROJET` / `SELECTED`, insère les 6 templates décision +
+  `ACTIVATION` (email de compte interne). Textes par défaut = textes exacts
+  de la v16, personnalisables dans Paramètres > Email.
+- Variables : `{{prenom}}`, `{{candidat}}`, `{{nom_complet}}`, `{{projet}}`,
+  `{{etape}}` (libellé FR de l'étape), `{{date}}` (JJ/MM/AAAA, reprise de
+  `formatInterviewDateFr` v16), `{{score}}`, `{{lien}}` (activation).
+- Déclenchement (`api/candidats/[id].ts`) : après commit de la décision,
+  un email **par décision du payload** (MB ignoré) ; un échec d'envoi ne
+  bloque jamais le flux (journal `envois_email`).
+- **Aucun** email à l'affectation (`api/previvier/[id]/affecter.ts` : le
+  déclencheur `AFFECTATION_PROJET` a été retiré).
+
+### 15.2 WhatsApp (Cloud API Meta) — envoi côté serveur
+
+- **Configuration** (Paramètres > WhatsApp, RH) : Phone Number ID, jeton
+  d'accès permanent (**chiffré AES-256-GCM en base**, même clé que la clé
+  email — jamais retourné par l'API, indicateur `has_token`), nom + langue du
+  **modèle pré-approuvé**, bascule actif. Table `parametres_whatsapp`
+  (migration 0003).
+- **Envoi** (`src/api/whatsapp.ts`) : même texte que l'email de la décision.
+  Mode **TEXTE** (fenêtre de service client 24 h) → bascule automatique sur
+  le **MODÈLE** pré-approuvé en cas de refus (reprise de la v16). API Graph
+  `v19.0`.
+- **Non configuré / désactivé → ignoré silencieusement** (statut `ignore`
+  journalisé, aucune alerte) — comportement v16.
+- **Journal** `envois_whatsapp` (candidat, destinataire, mode, statut,
+  détail) + route `GET /api/parametres/whatsapp/envois` (RH) ; **anonymisé à
+  la purge RGPD** (candidat_id NULL, destinataire `[purge RGPD]`).
+- Numéro candidat normalisé (`formatWhatsAppNumber`) : indicatif **Bénin
+  (+229) par défaut**, `00` → `+`, séparateurs retirés.
+
+### 15.3 Mot de passe oublié (auto-service)
+
+- `POST /api/auth/forgot` — **réservé aux accès Manager et Recruteur** (jamais
+  l'admin) : annule le mot de passe courant (`password_hash = NULL`), émet un
+  nouveau jeton d'activation, envoie l'email `ACTIVATION` (lien 7 jours) à
+  l'email du compte. La personne définit elle-même son nouveau mot de passe —
+  plus de réinitialisation par l'administrateur (réponse v16, messages
+  identiques). Audité (`compte.mot_de_passe_oublie`).
+- Front : bouton « Mot de passe oublié ? » sur l'écran de connexion + overlay
+  (validation @concentrix.com côté client et serveur).
+
+### 15.4 QR code TOTP (2FA)
+
+- La **bibliothèque QR embarquée de la v16** (MIT, Kazuhiko Arase — « QR Code
+  Generator for JavaScript ») est copiée dans `public/index.html` (script
+  autonome, pas de nouveau package).
+- `renderTotpQr()` : le lien `otpauth://` (déjà fourni par le serveur) est
+  encodé en QR SVG affiché sur l'écran de **configuration 2FA** (première
+  connexion) et dans le panneau **« Double authentification »** (régénération
+  de clé). Le secret reste côté serveur ; le QR ne porte que le lien public.
+
+### 15.5 Routes / endpoints nouveaux
+
+- `GET/PUT /api/parametres/whatsapp` (RH) — configuration.
+- `GET /api/parametres/whatsapp/envois` (RH) — journal.
+- `POST /api/auth/forgot` — mot de passe oublié.
+
+**Validation** : `npm run validate:step9` — 66 tests, 0 échec (migration,
+config WhatsApp chiffrée + droits + préservation/effacement du jeton,
+format numéro, envoi texte = même texte que l'email, bascule modèle, ignore
+silencieux, mot de passe oublié complet incl. réactivation + ancien mot de
+passe refusé, purge RGPD du journal WhatsApp).
+Régressions : toutes les suites vertes — 30/30 (schéma) · 47/47 (ét2) ·
+86/86 (ét3) · 57/57 (ét5 réécrite v16) · 30/30 (ét6) · 50/50 (ét7) · 59/59
+(ét8) + typecheck + syntaxe front.

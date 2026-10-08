@@ -76,9 +76,10 @@ const db = postgres(`postgres://test:test@127.0.0.1:${PORT}/suivi`, { max: 1 });
 try {
   await db.unsafe(fs.readFileSync(path.join(projectRoot, 'migrations', '0001_init.sql'), 'utf8'));
   await db.unsafe(fs.readFileSync(path.join(projectRoot, 'migrations', '0002_email_templates.sql'), 'utf8'));
-  check('migrations 0001 + 0002 appliquées', true);
+  await db.unsafe(fs.readFileSync(path.join(projectRoot, 'migrations', '0003_notification_v16.sql'), 'utf8'));
+  check('migrations 0001 + 0002 + 0003 appliquées', true);
 } catch (e) {
-  check('migrations 0001 + 0002 appliquées', false, e.message.slice(0, 160));
+  check('migrations 0001 + 0002 + 0003 appliquées', false, e.message.slice(0, 160));
   throw e;
 }
 
@@ -217,7 +218,7 @@ check('POST → 405', r.status === 405);
 console.log('\n[5] Purge RGPD');
 const nEntAvant = (await db`SELECT count(*)::int AS n FROM entretiens WHERE candidat_id = ${P}`)[0].n;
 const nEnvAvant = (await db`SELECT count(*)::int AS n FROM envois_email WHERE candidat_id = ${P}`)[0].n;
-check('pré-requis : 1 entretien + 2 emails journalisés', nEntAvant === 1 && nEnvAvant === 2, `ent=${nEntAvant} env=${nEnvAvant}`);
+check('pré-requis : 1 entretien + 1 email journalisé (RH_OK, v16)', nEntAvant === 1 && nEnvAvant === 1, `ent=${nEntAvant} env=${nEnvAvant}`);
 
 r = await call(api.candidatsPurge, req('POST', `/api/candidats/${P}/purger`, { token: MGR, body: { confirmation: P } }));
 check('purge (manager) → 403', r.status === 403);
@@ -229,12 +230,12 @@ r = await call(api.candidatsPurge, req('POST', `/api/candidats/c_inexistant/purg
 check('purge d\'un candidat inexistant → 404', r.status === 404);
 
 r = await call(api.candidatsPurge, req('POST', `/api/candidats/${P}/purger`, { token: RH, body: { confirmation: P } }));
-check('purge → 200 + compteurs', r.status === 200 && r.data.purgee.entretiens === 1 && r.data.purgee.envois_anonymises === 2, JSON.stringify(r.data));
+check('purge → 200 + compteurs', r.status === 200 && r.data.purgee.entretiens === 1 && r.data.purgee.envois_anonymises === 1, JSON.stringify(r.data));
 check('candidat supprimé (404)', (await call(api.candidatsId, req('GET', `/api/candidats/${P}`, { token: RH }))).status === 404);
 check('entretiens effacés (cascade)', (await db`SELECT count(*)::int AS n FROM entretiens WHERE candidat_id = ${P}`)[0].n === 0);
 const envRestes = await db`SELECT candidat_id, destinataire FROM envois_email WHERE id IN (SELECT id FROM envois_email ORDER BY id DESC LIMIT 10)`;
 const anonymes = envRestes.filter((x) => x.destinataire === '[purge RGPD]');
-check('traces d\'emails anonymisées (candidat_id NULL, destinataire [purge RGPD])', anonymes.length === 2 && anonymes.every((x) => x.candidat_id === null));
+check('traces d\'emails anonymisées (candidat_id NULL, destinataire [purge RGPD])', anonymes.length === 1 && anonymes.every((x) => x.candidat_id === null));
 aud = await db`SELECT detail::text AS d, cible_id FROM audit_log WHERE action = 'candidat.purge_rgpd' ORDER BY id DESC LIMIT 1`;
 check('purge consignée à l\'audit (sans données personnelles)', aud.length === 1 && aud[0].cible_id === P && !/pamela|zoungrana/i.test(aud[0].d));
 r = await call(api.candidatsPurge, req('POST', `/api/candidats/${P}/purger`, { token: RH, body: { confirmation: P } }));
@@ -256,7 +257,7 @@ const payload = JSON.parse(fs.readFileSync(path.join(backupsDir, files[0]), 'utf
 const nCand = (await db`SELECT count(*)::int AS n FROM candidats`)[0].n;
 const nAud = (await db`SELECT count(*)::int AS n FROM audit_log`)[0].n;
 check('export : compteurs exacts (candidats, audit)', payload.counts.candidats === nCand && payload.counts.audit_log === nAud && payload.counts.candidats >= 1, JSON.stringify(payload.counts));
-check('export : toutes les tables présentes', ['templates_email', 'parametres_email', 'comptes', 'candidats', 'entretiens', 'envois_email', 'audit_log'].every((t) => Array.isArray(payload.tables[t])));
+check('export : toutes les tables présentes', ['templates_email', 'parametres_email', 'parametres_whatsapp', 'comptes', 'candidats', 'entretiens', 'envois_email', 'envois_whatsapp', 'audit_log'].every((t) => Array.isArray(payload.tables[t])));
 check('export : clé email chiffrée (pas en clair)', !JSON.stringify(payload).includes('cle-test-000'));
 
 // Deuxième Postgres réel : restauration.
@@ -273,7 +274,7 @@ execFileSync(process.execPath, [path.join(projectRoot, 'scripts', 'backup-export
 });
 let ok = true;
 let detail = '';
-for (const t of ['templates_email', 'parametres_email', 'comptes', 'candidats', 'entretiens', 'envois_email', 'audit_log']) {
+for (const t of ['templates_email', 'parametres_email', 'parametres_whatsapp', 'comptes', 'candidats', 'entretiens', 'envois_email', 'envois_whatsapp', 'audit_log']) {
   // Noms de tables issus d'un tableau littéral (jamais d'entrée utilisateur) :
   // concaténation obligatoire (postgres.js binderait ${t} comme paramètre $1).
   const nSrc = (await db.unsafe(`SELECT count(*)::int AS n FROM ${t}`))[0].n;
@@ -283,7 +284,7 @@ for (const t of ['templates_email', 'parametres_email', 'comptes', 'candidats', 
     detail += ` ${t}:${nSrc}/${nDst}`;
   }
 }
-check('restauration : mêmes compteurs sur les 7 tables', ok, detail);
+check('restauration : mêmes compteurs sur les 9 tables', ok, detail);
 const cSrc = (await db`SELECT id, email FROM candidats LIMIT 1`)[0];
 const cDst = (await db2`SELECT id, email FROM candidats WHERE id = ${cSrc.id}`)[0];
 check('restauration : contenu identique (échantillon candidat)', !!cDst && cDst.email === cSrc.email);

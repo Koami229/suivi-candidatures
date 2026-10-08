@@ -27,7 +27,7 @@ if (!url) {
   process.exit(1);
 }
 // Ordre compatible aux clés étrangères (aussi l'ordre de restauration).
-const TABLES = ['templates_email', 'parametres_email', 'comptes', 'candidats', 'entretiens', 'envois_email', 'audit_log'];
+const TABLES = ['templates_email', 'parametres_email', 'parametres_whatsapp', 'comptes', 'candidats', 'entretiens', 'envois_email', 'envois_whatsapp', 'audit_log'];
 
 function iso(v) {
   if (v instanceof Date) return v.toISOString();
@@ -52,7 +52,7 @@ try {
       process.exit(1);
     }
     const payload = JSON.parse(fs.readFileSync(abs, 'utf8'));
-    if (!payload.tables || payload.schema !== 'suivi-candidatures/0002') {
+    if (!payload.tables || payload.schema !== 'suivi-candidatures/0003') {
       console.error('✗ Fichier de sauvegarde non reconnu (schéma ' + (payload.schema || '?') + ').');
       process.exit(1);
     }
@@ -70,7 +70,7 @@ try {
     }
     // Colonnes IDENTITY (GENERATED ALWAYS) : il faut OVERRIDING SYSTEM VALUE
     // pour réinsérer les id d'origine (traçabilité des journaux conservée).
-    const IDENTITY = new Set(['envois_email', 'audit_log']);
+    const IDENTITY = new Set(['envois_email', 'envois_whatsapp', 'audit_log']);
     for (const t of TABLES) {
       const rows = payload.tables[t] || [];
       for (const r of rows) {
@@ -97,7 +97,7 @@ try {
   }
   const payload = {
     exported_at: new Date().toISOString(),
-    schema: 'suivi-candidatures/0002',
+    schema: 'suivi-candidatures/0003',
     counts,
     tables: out,
   };
